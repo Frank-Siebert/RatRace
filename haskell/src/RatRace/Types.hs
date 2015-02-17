@@ -61,3 +61,10 @@ newtype U2 a = U2 (U (U a)) deriving (Show,Eq,Functor)
 instance Comonad U2 where
     extract (U2 u) = extract . extract $ u
     duplicate (U2 u) = fmap U2 . U2 . duplicate . duplicate $ u
+
+-- technically, Empty == Teleporter 0 0
+data Cell = Wall | Teleporter Int Int | Trap Int Int deriving (Eq,Show)
+emptyCell :: Cell
+emptyCell = Teleporter 0 0
+
+type Position = (Int,Int)
