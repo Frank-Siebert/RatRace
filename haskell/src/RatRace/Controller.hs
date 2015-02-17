@@ -50,7 +50,7 @@ buildFullCell cards track = toU2GraphW b track where
         nextCell = if trap then Nothing else _here2 <$> nc,
         position = pos,
         cellType = ct,
-        move     = undefined
+        move     = move' this
     } where
         ct = cards !! (snd $ extract u)
         pos = fst $ extract u
@@ -63,7 +63,14 @@ buildFullCell cards track = toU2GraphW b track where
         checkTrap _ = False
 -- StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
         move' this StandStill = nextCell . _here2 $ this
-        --move' this North      = nextCell . (_here2 >=>_up2) $ this
+        move' this North      = (_here2 <$>  _up2   this)              >>= nextCell
+        move' this NorthEast  = (_here2 <$> (_up2   this >>= _right2)) >>= nextCell
+        move' this East       = (_here2 <$>  _right2 this)             >>= nextCell
+        move' this SouthEast  = (_here2 <$> (_down2 this >>= _right2)) >>= nextCell
+        move' this South      = (_here2 <$>  _down2 this)              >>= nextCell
+        move' this SouthWest  = (_here2 <$> (_down2 this >>= _left2))  >>= nextCell
+        move' this West       = (_here2 <$>  _left2 this)              >>= nextCell
+        move' this NorthWest  = (_here2 <$> (_up2   this >>= _left2))  >>= nextCell
 
 
 -- instance declarations to put them in Set.Set for aStar
