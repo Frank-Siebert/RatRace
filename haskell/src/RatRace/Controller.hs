@@ -1,22 +1,19 @@
-module Controller where
+module RatRace.Controller where
 
 import Control.Applicative
 import Control.Arrow (second)
-import Control.Monad.State
 import Control.Comonad
+import Control.Monad
+import Control.Monad.State (evalState) -- for debug only?
 import Data.Graph.AStar (aStar)
 import Data.Maybe (catMaybes)
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList)
 import System.Random
 
-import RatRace
-
-main :: IO ()
-main = do newStdGen >>= print  . evalState randomGenome
-          putStrLn "Now for some more stuff"
-          newStdGen >>= print . evalState generateRaceTrack
-          newStdGen >>= print . evalState generateCells
+import RatRace.Types
+import RatRace.Util
+import RatRace.Rand
 
 
 
@@ -31,24 +28,22 @@ emptyCell = Teleporter 0 0
 
 data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int } --
 
-generateRaceTrack :: Rand (U2 (Position,Color))
-generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackWidth (replicateM raceTrackLength generateColor)
-
 addPos :: [[a]] -> [[(Position,a)]]
 addPos = zipWith (\y -> map (\(x,a)->((x,y),a))) [0..] . map (zip [0..])
 
+generateRaceTrack :: Rand (U2 (Position,Color))
+generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackWidth (replicateM raceTrackLength generateColor)
+
 generateColor :: Rand Color
-generateColor = do (x,g) <- randomR (0,15) <$> get
-                   put g
-                   return x
+generateColor = getRandomR (0,15)
 
 generateCells :: Rand [Cell]
 generateCells = do te1 <- genCell Teleporter 4
                    te2 <- genCell Teleporter 4
-                   tr1 <- liftM2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
-                   tr2 <- liftM2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
+                   tr1 <- liftA2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
+                   tr2 <- liftA2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
                    shuffle $ [Wall,Wall,te1,te2,tr1,tr2]++replicate 8 emptyCell where
-           genCell ctor r = dropWhileM (==ctor 0 0) $ liftM2 ctor (getRandomR (-r,r)) (getRandomR (-r,r))
+           genCell ctor r = dropWhileM (==ctor 0 0) $ liftA2 ctor (getRandomR (-r,r)) (getRandomR (-r,r))
 
 dropWhileM :: (Monad m) => (a -> Bool) -> m a -> m a
 dropWhileM p action = do x <- action
@@ -147,3 +142,11 @@ instance Ord FullCell where
 
 neighbors :: FullCell -> Set.Set FullCell
 neighbors c = Set.fromList . map _here2 . catMaybes . map (move c) $ [North .. NorthWest]
+
+runContest :: [Player] -> IO ()
+runContest _ =
+     do newStdGen >>= print  . evalState randomGenome
+        putStrLn "Now for some more stuff"
+        newStdGen >>= print . evalState generateRaceTrack
+        newStdGen >>= print . evalState generateCells
+
