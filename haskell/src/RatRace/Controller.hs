@@ -23,10 +23,10 @@ data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int, r
 
 data FullCell = FullCell {
    vision   :: U2 Color,
-   nextCell :: Maybe (U2Graph FullCell), -- Nothing means specimen dies
+   nextCell :: Maybe FullCell, -- Nothing means specimen dies
    position :: Position,
    cellType :: Cell,
-   move     :: Move -> Maybe (U2Graph FullCell)
+   move     :: Move -> Maybe FullCell
 }
 
 data Contestant = Contestant {
@@ -47,10 +47,10 @@ buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where
     b this u = FullCell {
         vision   = snd <$> (takeU2 2 u),
-        nextCell = if trap then Nothing else nc,
+        nextCell = if trap then Nothing else _here2 <$> nc,
         position = pos,
         cellType = ct,
-        move     = move' this
+        move     = undefined
     } where
         ct = cards !! (snd $ extract u)
         pos = fst $ extract u
@@ -62,8 +62,8 @@ buildFullCell cards track = toU2GraphW b track where
         checkTrap ((x,y),Trap dx dy) = x + dx == fst pos && y + dy == snd pos
         checkTrap _ = False
 -- StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
-        --move' this StandStill = nextCell
-        move' = undefined
+        move' this StandStill = nextCell . _here2 $ this
+        --move' this North      = nextCell . (_here2 >=>_up2) $ this
 
 
 -- instance declarations to put them in Set.Set for aStar
@@ -73,7 +73,7 @@ instance Ord FullCell where
    compare = comparing position
 
 neighbors :: FullCell -> Set.Set FullCell
-neighbors c = Set.fromList . map _here2 . catMaybes . map (move c) $ [North .. NorthWest]
+neighbors c = Set.fromList . catMaybes . map (move c) $ [North .. NorthWest]
 
 mkContestant :: Player -> Contestant
 mkContestant p = Contestant {
