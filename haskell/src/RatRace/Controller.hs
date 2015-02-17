@@ -29,6 +29,12 @@ data FullCell = FullCell {
    move     :: Move -> Maybe (U2Graph FullCell)
 }
 
+data Contestant = Contestant {
+   playerStrategy :: Player,
+   liveRats :: [Specimen],
+   score :: Double
+}
+
 iter :: (Monad m) => Int -> (a -> m a) -> (a -> m a) -> a -> m a
 iter n f g | n > 0     = g >=> iter (n-1) f g
            | n < 0     = f >=> iter (n-1) f g
@@ -44,7 +50,7 @@ buildFullCell cards track = toU2GraphW b track where
         nextCell = if trap then Nothing else nc,
         position = pos,
         cellType = ct,
-        move     = undefined
+        move     = move' this
     } where
         ct = cards !! (snd $ extract u)
         pos = fst $ extract u
@@ -55,6 +61,9 @@ buildFullCell cards track = toU2GraphW b track where
         trap = any checkTrap . map (second (cards !!)) . concat . listFromU2 . takeU2 1 $ u
         checkTrap ((x,y),Trap dx dy) = x + dx == fst pos && y + dy == snd pos
         checkTrap _ = False
+-- StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
+        --move' this StandStill = nextCell
+        move' = undefined
 
 
 -- instance declarations to put them in Set.Set for aStar
@@ -66,10 +75,36 @@ instance Ord FullCell where
 neighbors :: FullCell -> Set.Set FullCell
 neighbors c = Set.fromList . map _here2 . catMaybes . map (move c) $ [North .. NorthWest]
 
+mkContestant :: Player -> Contestant
+mkContestant p = Contestant {
+    playerStrategy = p,
+    liveRats = [],
+    score = 1.0
+}
+
+checkRaceTrack :: U2Graph FullCell -> Bool
+checkRaceTrack raceTrack = (<=100) . maybe 101 length $
+                           aStar neighbors
+                                 (\_ _ -> 1)
+                                 (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
+                                 (\fc -> fst (position fc) >= 49)
+                                 (_here2 raceTrack)
+
+createRaceTrack :: Rand (U2Graph FullCell)
+createRaceTrack = do
+    colorU2 <- generateRaceTrack
+    cells <- generateCells
+    let result = buildFullCell cells colorU2
+    return result
+    -- TODO simple applicative / liftA2
+
 runContest :: [Player] -> IO ()
-runContest _ =
-     do newStdGen >>= print  . evalState randomGenome
+runContest ps =
+     do let contestants = map mkContestant ps
+        newStdGen >>= print  . evalState randomGenome
         putStrLn "Now for some more stuff"
         newStdGen >>= print . evalState generateRaceTrack
         newStdGen >>= print . evalState generateCells
-
+        gen <- newStdGen
+        let rt = evalState createRaceTrack gen
+        print $ checkRaceTrack rt
