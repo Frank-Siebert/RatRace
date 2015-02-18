@@ -14,4 +14,6 @@ main = runContest []
 square :: U2 Char
 square = fromListU2 ["abc","def","ghi"]
 
-rt = evalState createRaceTrack (mkStdGen 100) 
+rt = evalState createRaceTrack (mkStdGen 100)
+
+single = U2 (U [] (U "" 'X' "") [])
