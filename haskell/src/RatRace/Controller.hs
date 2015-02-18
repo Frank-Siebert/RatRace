@@ -4,19 +4,21 @@ import Control.Applicative
 import Control.Arrow (second)
 import Control.Comonad
 import Control.Monad
-import Control.Monad.State (evalState,runStateT) -- evalState for debug only?
+import Control.Monad.State (evalStateT,runStateT)
 import Control.Monad.Trans (lift,liftIO)
 import Data.Graph.AStar (aStar)
 import Data.Maybe (catMaybes)
+import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList)
+import Debug.Trace
 import System.Random
 
 import RatRace.Types
 import RatRace.Util
 import RatRace.Rand
 
-
+trace' x = trace (show x) x
 
 ----- below here controller only
 
@@ -79,6 +81,8 @@ instance Eq FullCell where
    a == b = position a == position b
 instance Ord FullCell where
    compare = comparing position
+instance Show FullCell where
+   show fc = show (cellType fc)++ show (position fc)
 
 neighbors :: FullCell -> Set.Set FullCell
 neighbors c = Set.fromList . catMaybes . map (move c) $ [North .. NorthWest]
@@ -91,25 +95,26 @@ mkContestant p = Contestant {
 }
 
 checkRaceTrack :: U2Graph FullCell -> Bool
-checkRaceTrack raceTrack = (>=10) . length . filter (<=100) $ map (maybe 101 length .
+checkRaceTrack raceTrack = (>=10) . length . filter (<=100) . trace' $ map (maybe 101 length .
                            aStar neighbors
                                  (\_ _ -> 1)
                                  (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
                                  (\fc -> fst (position fc) >= 49) .
                             _here2 )$
-                            iterateMaybe _down2 $ raceTrack
+                            raceTrack : (iterateMaybe _up2 $ raceTrack)
 
 createRaceTrack :: Rand (U2Graph FullCell)
 createRaceTrack = do
     colorU2 <- generateRaceTrack
-    cells <- generateCells
+    --cells <- generateCells
+    let cells = replicate 16 (Teleporter 0 0)
     let result = buildFullCell cells colorU2
     return result
     -- TODO simple applicative / liftA2
 
---runContest :: [Player] -> IO ()
-runContest ps = newStdGen >>= runStateT (do
-        let contestants = map mkContestant ps
+runContest :: [Player] -> IO ()
+runContest ps = newStdGen >>= evalStateT (
+     do let contestants = map mkContestant ps
         genome <- lower randomGenome
         liftIO $ print genome
         liftIO $ putStrLn "Now for some more stuff"
@@ -117,5 +122,11 @@ runContest ps = newStdGen >>= runStateT (do
         liftIO $ print rt'
         cells <- lower generateCells
         liftIO $ print cells
-        rt <- lower createRaceTrack
-        lift $ print $ checkRaceTrack rt) >> return ()
+        oneRt <- fromJust . (_right2 >=> _right2 >=> _up2) <$> lower createRaceTrack
+        liftIO $ print (_here2 $ oneRt)
+        liftIO $ putStrLn $ "The neighbors are :" ++ show (neighbors . _here2 $ oneRt)
+--        rt <- untilM checkRaceTrack (lower createRaceTrack)
+        rt <- (lower createRaceTrack)
+        lift $ print $ checkRaceTrack rt
+        )
+        

@@ -39,6 +39,9 @@ data U2Graph a = U2Graph {
     _up2    :: Maybe (U2Graph a)
 }
 
+instance (Show a) => Show (U2Graph a) where
+   show = show . _here2
+
 
 -- from http://stackoverflow.com/questions/28516819/tying-the-knot-with-a-comonad
 toU2Graph :: (U2Graph b -> a -> b) -> U2 a -> U2Graph b
@@ -60,3 +63,7 @@ toU2Graph c (U2 (U ls (U ds h us) rs)) = g
 
 toU2GraphW :: (U2Graph b -> U2 a -> b) -> U2 a -> U2Graph b
 toU2GraphW f u = toU2Graph f (duplicate u)
+
+untilM :: (Monad m) => (a -> Bool) -> m a -> m a
+untilM p action = do x <- action
+                     if (p x) then return x else untilM p action
