@@ -51,10 +51,10 @@ mutateGenome (g:gs) = do c <- getRandom
                          ((if c < genomeFlipChance then not g else g):) <$>  mutateGenome gs
 
 addPos :: [[a]] -> [[(Position,a)]]
-addPos = zipWith (\y -> map (\(x,a)->((x,y),a))) [0..] . map (zip [0..])
+addPos = zipWith (\x -> map (\(y,a)->((x,y),a))) [0..] . map (zip [0..])
 
 generateRaceTrack :: Rand (U2 (Position,Color))
-generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackWidth (replicateM raceTrackLength generateColor)
+generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackLength (replicateM raceTrackWidth generateColor)
 
 generateColor :: Rand Color
 generateColor = getRandomR (0,15)
