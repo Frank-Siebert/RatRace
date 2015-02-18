@@ -90,12 +90,13 @@ mkContestant p = Contestant {
 }
 
 checkRaceTrack :: U2Graph FullCell -> Bool
-checkRaceTrack raceTrack = (<=100) . maybe 101 length $
+checkRaceTrack raceTrack = (>=10) . length . filter (<=100) $ map (maybe 101 length .
                            aStar neighbors
                                  (\_ _ -> 1)
                                  (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
-                                 (\fc -> fst (position fc) >= 49)
-                                 (_here2 raceTrack)
+                                 (\fc -> fst (position fc) >= 49) .
+                            _here2 )$
+                            iterateMaybe _down2 $ raceTrack
 
 createRaceTrack :: Rand (U2Graph FullCell)
 createRaceTrack = do
