@@ -2,6 +2,7 @@
 module RatRace.Types where
 
 import Control.Comonad
+import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
 raceTrackLength :: Int
@@ -62,12 +63,12 @@ newtype U2 a = U2 (U (U a)) deriving (Show,Eq,Functor)
 instance Comonad U2 where
     extract (U2 u) = extract . extract $ u
     duplicate (U2 u) =  fmap U2 $ U2 $ roll $ roll u where
-        iterate1 :: (a -> a) -> a -> [a]
-        iterate1 f = tail . iterate f
-        roll :: (Functor f) => f (U a) -> U (f (U a))
-        roll a = U (iterate1 (fmap left) a) a (iterate1 (fmap right) a)
-        left (U (a:as) b cs) = U as a (b:cs)
-        right (U as b (c:cs)) = U (b:as) c cs
+        fmap' :: (a -> Maybe b) -> U a -> Maybe (U b)
+        fmap' f (U ls x rs) = let z = f x in
+           case z of
+             Nothing   -> Nothing
+             (Just x') -> Just $ U (catMaybes (map f ls)) x' (catMaybes (map f rs))
+        roll a = U (iterateMaybe (fmap' leftU) a) a (iterateMaybe (fmap' rightU) a)
     
 -- technically, Empty == Teleporter 0 0
 data Cell = Wall | Teleporter Int Int | Trap Int Int deriving (Eq,Show)
