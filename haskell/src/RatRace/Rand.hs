@@ -27,7 +27,7 @@ getRandomR range = do (x,g) <- (randomR range <$> get)
                       put g
                       return x
 
-getStdGen :: Rand StdGen
+getStdGen :: (Monad m, Functor m) => RandT m StdGen
 getStdGen = do (g,h) <- (split <$> get)
                put g
                return h

@@ -147,4 +147,30 @@ scoreTrack track player = do initialRats <- replicateM 10 createSpecimen
         trackTurn 0 score rats     = return (score,rats)
         trackTurn _ score       [] = return (score,[])
         trackTurn _ score rats@[_] = return (score,rats)
-        trackTurn roundsLeft score rats = undefined
+        trackTurn roundsLeft score rats = do
+            let currentRats = rats
+            childrenG <- breed currentRats
+            children <- forM childrenG (\gen -> Specimen gen 0 0 <$> drawFromList startingCells)
+            trackTurn (roundsLeft - 1) score (currentRats++children)
+
+fitnessScore :: Specimen -> Int
+fitnessScore (Specimen _ cr _ cell) = cr * 50 + fst (position cell)
+-- need admissibleStartingCells, so maybe just return genome?
+-- | only the children, the incoming list is not returned
+breed :: [Specimen] -> RandT IO [Genome]
+breed parents = let total = sum $ map  fitnessScore parents
+                 in replicateM 10 $ do
+                        motherFitness <- getRandomR (0, total - 1)
+                        let (mother, other) = drawRat parents motherFitness
+                            total' = total - fitnessScore mother
+                        fatherFitness <- getRandomR (0, total' - 1)
+                        let (father, _) = drawRat parents fatherFitness
+                        lower $ mixGenome (genome mother) (genome father)
+
+drawRat :: [Specimen] -> Int -> (Specimen,[Specimen])
+drawRat = go id where
+        go difflist (rat:pool) ness =
+            let fitness = fitnessScore rat
+             in if fitness > ness
+                                then (rat,difflist pool)
+                                else go ((rat:).difflist) pool (ness - fitness) -- TODO check if that is the right way for difflist
