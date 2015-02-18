@@ -5,7 +5,7 @@ import Control.Comonad
 import System.Random (StdGen)
 
 raceTrackLength :: Int
-raceTrackLength = 53
+raceTrackLength = 54
 
 raceTrackWidth :: Int
 raceTrackWidth = 15
@@ -58,10 +58,17 @@ instance Comonad U where
 
 newtype U2 a = U2 (U (U a)) deriving (Show,Eq,Functor)
 
+-- seems to require infinite grids!!!
 instance Comonad U2 where
     extract (U2 u) = extract . extract $ u
-    duplicate (U2 u) = fmap U2 . U2 . duplicate . duplicate $ u
-
+    duplicate (U2 u) =  fmap U2 $ U2 $ roll $ roll u where
+        iterate1 :: (a -> a) -> a -> [a]
+        iterate1 f = tail . iterate f
+        roll :: (Functor f) => f (U a) -> U (f (U a))
+        roll a = U (iterate1 (fmap left) a) a (iterate1 (fmap right) a)
+        left (U (a:as) b cs) = U as a (b:cs)
+        right (U as b (c:cs)) = U (b:as) c cs
+    
 -- technically, Empty == Teleporter 0 0
 data Cell = Wall | Teleporter Int Int | Trap Int Int deriving (Eq,Show)
 emptyCell :: Cell
