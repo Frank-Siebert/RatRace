@@ -93,13 +93,19 @@ mkContestant p = Contestant {
 }
 
 checkRaceTrack :: U2Graph FullCell -> Bool
-checkRaceTrack raceTrack = (>=10) . length . filter (<=100) . traceShowId $ map (maybe 101 length .
+checkRaceTrack = (>=10) . length . admissibleStartingCells
+
+admissibleStartingCells :: U2Graph FullCell -> [U2Graph FullCell]
+admissibleStartingCells raceTrack = filter isAdmissibleStartingCell (raceTrack : (iterateMaybe _up2 $ raceTrack))
+
+-- | for a single
+isAdmissibleStartingCell :: U2Graph FullCell -> Bool
+isAdmissibleStartingCell track = maybe False ((<=100) . length) (
                            aStar neighbors
                                  (\_ _ -> 1)
                                  (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
                                  (\fc -> fst (position fc) >= 49) .
-                            _here2 )$
-                            raceTrack : (iterateMaybe _up2 $ raceTrack)
+                            _here2 $ track)
 
 createRaceTrack :: Rand (U2Graph FullCell)
 createRaceTrack = do
@@ -125,4 +131,6 @@ runContest ps = newStdGen >>= evalStateT (
         rt <- untilM checkRaceTrack (lower createRaceTrack)
         lift $ print $ checkRaceTrack rt
         )
-        
+
+runTrack :: Player -> U2Graph FullCell
+runTrack = undefined
