@@ -12,7 +12,7 @@ import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList)
 import Debug.Trace
-import System.Random
+import System.Random (newStdGen, StdGen)
 
 import RatRace.Types
 import RatRace.Util
@@ -132,16 +132,16 @@ runContest ps = newStdGen >>= evalStateT (
         liftIO $ print $ "A player scored " ++ show score ++ "."
         )
 
-data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int, ratCell :: FullCell } --
+data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int, ratCell :: FullCell, run :: Run } --
 
 
 scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
-scoreTrack track player = do initialRats <- replicateM 10 createSpecimen
+scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (replicateM 10 randomGenome)
                              (score,_) <- trackTurn gameTurns initialScore initialRats
                              return score
     where
-        createSpecimen :: RandT IO Specimen
-        createSpecimen = Specimen <$> lower randomGenome <*> pure 0 <*> pure 0 <*> drawFromList startingCells
+        createSpecimen :: Genome -> RandT IO Specimen
+        createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (playerStrategy player $ genome)
         startingCells = map _here2 $ admissibleStartingCells track
         trackTurn :: Int -> Int -> [Specimen] -> RandT IO (Int,[Specimen])
         trackTurn 0 score rats     = return (score,rats)
@@ -150,11 +150,21 @@ scoreTrack track player = do initialRats <- replicateM 10 createSpecimen
         trackTurn roundsLeft score rats = do
             let currentRats = rats
             childrenG <- breed currentRats
-            children <- forM childrenG (\gen -> Specimen gen 0 0 <$> drawFromList startingCells)
+            children <- forM childrenG createSpecimen
             trackTurn (roundsLeft - 1) score (currentRats++children)
+        moveSpecimen :: Specimen -> RandT IO (Maybe Specimen)
+        moveSpecimen rat = do g <- lower getStdGen
+                              let newPos = moveRat g rat
+                              case newPos of
+                                Nothing -> return Nothing
+                                Just (newPos') -> return . Just $ rat { ratCell = newPos', age = age rat + 1 } -- TODO increase score, die on age...
+
+moveRat :: StdGen -> Specimen -> Maybe FullCell
+moveRat g rat = let cell = ratCell rat
+                 in move cell $ (run rat) g (vision cell)
 
 fitnessScore :: Specimen -> Int
-fitnessScore (Specimen _ cr _ cell) = cr * 50 + fst (position cell)
+fitnessScore rat = completedRuns rat * 50 + fst (position $ ratCell rat)
 -- need admissibleStartingCells, so maybe just return genome?
 -- | only the children, the incoming list is not returned
 breed :: [Specimen] -> RandT IO [Genome]

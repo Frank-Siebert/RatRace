@@ -35,8 +35,9 @@ type Vision = U2 Color
 data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest deriving (Enum)
 
 
-type Player = Genome -> (StdGen -> Vision -> Move)
-
+type Player = Genome -> Run
+type Run = (StdGen -> Vision -> Move)
+-- TODO rename Run vs Move, something is fishy
 
 data U a = U [a] a [a] deriving (Show,Eq,Functor)
 
