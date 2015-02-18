@@ -4,7 +4,8 @@ import Control.Applicative
 import Control.Arrow (second)
 import Control.Comonad
 import Control.Monad
-import Control.Monad.State (evalState) -- for debug only?
+import Control.Monad.State (evalState,runStateT) -- evalState for debug only?
+import Control.Monad.Trans (lift,liftIO)
 import Data.Graph.AStar (aStar)
 import Data.Maybe (catMaybes)
 import Data.Ord (comparing)
@@ -106,13 +107,15 @@ createRaceTrack = do
     return result
     -- TODO simple applicative / liftA2
 
-runContest :: [Player] -> IO ()
-runContest ps =
-     do let contestants = map mkContestant ps
-        newStdGen >>= print  . evalState randomGenome
-        putStrLn "Now for some more stuff"
-        newStdGen >>= print . evalState generateRaceTrack
-        newStdGen >>= print . evalState generateCells
-        gen <- newStdGen
-        let rt = evalState createRaceTrack gen
-        print $ checkRaceTrack rt
+--runContest :: [Player] -> IO ()
+runContest ps = newStdGen >>= runStateT (do
+        let contestants = map mkContestant ps
+        genome <- lower randomGenome
+        liftIO $ print genome
+        liftIO $ putStrLn "Now for some more stuff"
+        rt' <- lower generateRaceTrack
+        liftIO $ print rt'
+        cells <- lower generateCells
+        liftIO $ print cells
+        rt <- lower createRaceTrack
+        lift $ print $ checkRaceTrack rt) >> return ()
