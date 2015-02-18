@@ -20,8 +20,6 @@ import RatRace.Rand
 
 ----- below here controller only
 
-data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int, ratCell :: FullCell } --
-
 data FullCell = FullCell {
    vision   :: U2 Color,
    nextCell :: Maybe FullCell, -- Nothing means specimen dies
@@ -130,7 +128,23 @@ runContest ps = newStdGen >>= evalStateT (
         liftIO $ putStrLn $ "The neighbors are :" ++ show (neighbors . _here2 $ oneRt)
         rt <- untilM checkRaceTrack (lower createRaceTrack)
         lift $ print $ checkRaceTrack rt
+        score <- mapM (scoreTrack rt) contestants
+        liftIO $ print $ "A player scored " ++ show score ++ "."
         )
 
-runTrack :: Player -> U2Graph FullCell
-runTrack = undefined
+data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int, ratCell :: FullCell } --
+
+
+scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
+scoreTrack track player = do initialRats <- replicateM 10 createSpecimen
+                             (score,_) <- trackTurn gameTurns initialScore initialRats
+                             return score
+    where
+        createSpecimen :: RandT IO Specimen
+        createSpecimen = Specimen <$> lower randomGenome <*> pure 0 <*> pure 0 <*> drawFromList startingCells
+        startingCells = map _here2 $ admissibleStartingCells track
+        trackTurn :: Int -> Int -> [Specimen] -> RandT IO (Int,[Specimen])
+        trackTurn 0 score rats     = return (score,rats)
+        trackTurn _ score       [] = return (score,[])
+        trackTurn _ score rats@[_] = return (score,rats)
+        trackTurn roundsLeft score rats = undefined

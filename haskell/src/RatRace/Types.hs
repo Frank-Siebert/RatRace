@@ -20,6 +20,12 @@ genomeChangeChance = 0.05
 genomeFlipChance :: Double
 genomeFlipChance = 0.01
 
+gameTurns :: Int
+gameTurns = 10000
+
+initialScore :: Int
+initialScore = 1
+
 
 type Genome = [Bool]
 type Color = Int

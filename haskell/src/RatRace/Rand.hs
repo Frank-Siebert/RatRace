@@ -22,7 +22,7 @@ getRandom = do (x,g) <- (random <$> get)
                put g
                return x
 
-getRandomR :: (Random a) => (a,a) -> Rand a
+getRandomR :: (Random a, Monad m, Functor m) => (a,a) -> RandT m a
 getRandomR range = do (x,g) <- (randomR range <$> get)
                       put g
                       return x
@@ -58,6 +58,9 @@ generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackLength (replicat
 
 generateColor :: Rand Color
 generateColor = getRandomR (0,15)
+
+drawFromList :: (Monad m, Functor m) => [a] -> RandT m a
+drawFromList xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
 generateCells :: Rand [Cell]
 generateCells = do te1 <- genCell Teleporter 4
