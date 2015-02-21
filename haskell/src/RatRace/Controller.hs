@@ -102,8 +102,11 @@ isAdmissibleStartingCell track = maybe False ((<=100) . length) (
                            aStar neighbors
                                  (\_ _ -> 1)
                                  (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
-                                 (\fc -> fst (position fc) >= 49) .
+                                 isGoal .
                             _here2 $ track)
+
+isGoal :: FullCell -> Bool
+isGoal = (>=49) . fst . position
 
 createRaceTrack :: Rand (U2Graph FullCell)
 createRaceTrack = do
@@ -153,11 +156,18 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
             children <- forM childrenG createSpecimen
             trackTurn (roundsLeft - 1) score (currentRats++children)
         moveSpecimen :: Specimen -> RandT IO (Maybe Specimen)
-        moveSpecimen rat = do g <- lower getStdGen
-                              let newPos = moveRat g rat
-                              case newPos of
-                                Nothing -> return Nothing
-                                Just (newPos') -> return . Just $ rat { ratCell = newPos', age = age rat + 1 } -- TODO increase score, die on age...
+        moveSpecimen rat =
+            do g <- lower getStdGen
+               let newPos = moveRat g rat
+               case newPos of
+                  Nothing -> return Nothing
+                  Just (newPos') -> return . Just $ rat { ratCell = newPos', age = age rat + 1 } -- TODO increase score, die on age...
+        resetScorer :: Specimen -> RandT IO (Specimen,Int)
+        resetScorer rat = if isGoal (ratCell rat)
+                               then do newPos <- drawFromList startingCells
+                                       let rat' = rat { ratCell = newPos, age = 0 }
+                                       return (rat',0)
+                               else return (rat,0)
 
 moveRat :: StdGen -> Specimen -> Maybe FullCell
 moveRat g rat = let cell = ratCell rat
