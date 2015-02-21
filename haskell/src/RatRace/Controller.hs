@@ -151,7 +151,7 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         trackTurn _ score       [] = return (score,[])
         trackTurn _ score rats@[_] = return (score,rats)
         trackTurn roundsLeft score rats = do
-            let currentRats = rats
+            currentRats <- catMaybes <$> mapM moveSpecimen rats
             childrenG <- breed currentRats
             children <- forM childrenG createSpecimen
             trackTurn (roundsLeft - 1) score (currentRats++children)
