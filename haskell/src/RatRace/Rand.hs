@@ -2,14 +2,14 @@ module RatRace.Rand where
 
 import Control.Applicative
 import Control.Monad.State
-import qualified Data.Functor.Identity
+import qualified Control.Monad.Identity
 import System.Random
 
 import RatRace.Types
 import RatRace.Util
 
 type RandT m = StateT StdGen m
-type Rand = RandT Data.Functor.Identity.Identity
+type Rand = RandT Control.Monad.Identity.Identity
 
 lower :: (Monad m) => Rand a -> RandT m a
 lower action = StateT $ \s -> return (runState action s)

@@ -4,7 +4,7 @@ import RatRace.Util -- for square, remove, RatRace.RatRace import should be enou
 import RatRace.Types
 import System.Random
 import RatRace.Controller
-import Control.Monad.Trans.State
+import Control.Monad.State
 import Control.Comonad
 
 
