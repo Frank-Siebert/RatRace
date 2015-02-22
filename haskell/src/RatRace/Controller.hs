@@ -183,12 +183,14 @@ fitnessScore rat = completedRuns rat * 50 + fst (position $ ratCell rat)
 -- need admissibleStartingCells, so maybe just return genome?
 -- | only the children, the incoming list is not returned
 breed :: [Specimen] -> RandT IO [Genome]
-breed parents = let total = sum $ map  fitnessScore parents
+breed  [] = return []
+breed [_] = return []
+breed parents = let total = (sum $ map  fitnessScore parents) - 1
                  in replicateM 10 $ do
-                        motherFitness <- getRandomR (0, total - 1)
+                        motherFitness <- getRandomR (0, total)
                         let (mother, other) = drawRat parents motherFitness
                             total' = total - fitnessScore mother
-                        fatherFitness <- getRandomR (0, total' - 1)
+                        fatherFitness <- getRandomR (0, total')
                         let (father, _) = drawRat parents fatherFitness
                         lower $ mixGenome (genome mother) (genome father)
 
