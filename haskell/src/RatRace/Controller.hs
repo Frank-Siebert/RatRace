@@ -155,9 +155,10 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         trackTurn _ score rats@[_] = return (score,rats)
         trackTurn roundsLeft score rats = do
             liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats)
-            currentRats <- filter ((<=100) . age) . catMaybes <$> mapM moveSpecimen rats
-            childrenG <- breed currentRats
-            children <- forM childrenG createSpecimen
+            currentRats <- nf <$> filter ((<=100) . age) . catMaybes <$> mapM moveSpecimen rats
+            childrenG <- nf <$> breed currentRats
+            childrenM <- nf <$> lower (mapM mutateGenome childrenG)
+            children <- nf <$> forM childrenM createSpecimen
             trackTurn (roundsLeft - 1) score (children ++ currentRats)
         moveSpecimen :: Specimen -> RandT IO (Maybe Specimen)
         moveSpecimen rat =
@@ -178,7 +179,7 @@ moveRat g rat = let cell = ratCell rat
                  in move cell $ (run rat) g (vision cell)
 
 fitnessScore :: Specimen -> Int
-fitnessScore rat = completedRuns rat * 50 + fst (position $ ratCell rat)
+fitnessScore rat = 1 + completedRuns rat * 50 + fst (position $ ratCell rat)
 -- need admissibleStartingCells, so maybe just return genome?
 -- | only the children, the incoming list is not returned
 breed :: [Specimen] -> RandT IO [Genome]
@@ -200,3 +201,4 @@ drawRat = go id where
              in if fitness > ness
                                 then (rat,difflist pool)
                                 else go ((rat:).difflist) pool (ness - fitness) -- TODO check if that is the right way for difflist
+        go f [] ness = error $ "Ness is still " ++ show ness ++ " at empty list; " ++ show (length (f []))

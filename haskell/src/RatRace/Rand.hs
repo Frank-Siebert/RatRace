@@ -5,7 +5,7 @@ module RatRace.Rand (
 ) where
 
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad.State.Strict
 import qualified Control.Monad.Identity
 import System.Random
 
@@ -19,7 +19,11 @@ lower :: (Monad m) => Rand a -> RandT m a
 lower action = StateT $ \s -> return (runState action s)
 
 randomGenome :: Rand Genome
-randomGenome = replicateM 100 getRandom
+randomGenome = nf <$> replicateM 100 getRandom
+
+nf :: [a] -> [a]
+nf [] = []
+nf (x:xs) = x `seq` x:(nf xs)
 
 getRandom :: (Random a) => Rand a
 getRandom = do (x,g) <- (random <$> get)
