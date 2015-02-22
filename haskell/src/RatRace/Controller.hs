@@ -49,7 +49,7 @@ buildFullCell cards track = toU2GraphW b track where
         nextCell = if trap then Nothing else _here2 <$> nc,
         position = pos,
         cellType = ct,
-        move     = move' this
+        move     = move'
     } where
         ct = cards !! (snd $ extract u)
         pos = fst $ extract u
@@ -60,16 +60,20 @@ buildFullCell cards track = toU2GraphW b track where
         trap = any checkTrap . map (second (cards !!)) . concat . listFromU2 . takeU2 1 $ u
         checkTrap ((x,y),Trap dx dy) = x + dx == fst pos && y + dy == snd pos
         checkTrap _ = False
+        move'' :: (U2Graph FullCell -> Maybe (U2Graph FullCell)) -> Maybe FullCell
+        move'' f = liftM (resetIfWall this) (f this) >>= nextCell . _here2
+        resetIfWall :: U2Graph FullCell -> U2Graph FullCell -> U2Graph FullCell
+        resetIfWall origin dest = if cellType (_here2 dest) == Wall then origin else dest
 -- StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
-        move' this StandStill = nextCell . _here2 $ this
-        move' this North      = (_here2 <$>  _up2   this)              >>= nextCell
-        move' this NorthEast  = (_here2 <$> (_up2   this >>= _right2)) >>= nextCell
-        move' this East       = (_here2 <$>  _right2 this)             >>= nextCell
-        move' this SouthEast  = (_here2 <$> (_down2 this >>= _right2)) >>= nextCell
-        move' this South      = (_here2 <$>  _down2 this)              >>= nextCell
-        move' this SouthWest  = (_here2 <$> (_down2 this >>= _left2))  >>= nextCell
-        move' this West       = (_here2 <$>  _left2 this)              >>= nextCell
-        move' this NorthWest  = (_here2 <$> (_up2   this >>= _left2))  >>= nextCell
+        move' StandStill = nextCell . _here2 $ this
+        move' North      = move'' $ _up2
+        move' NorthEast  = move'' $ _up2   >=> _right2
+        move' East       = move'' $            _right2
+        move' SouthEast  = move'' $ _down2 >=> _right2
+        move' South      = move'' $ _down2
+        move' SouthWest  = move'' $ _down2 >=> _left2
+        move' West       = move'' $            _left2
+        move' NorthWest  = move'' $ _up2   >=> _left2
 
 
 -- instance declarations to put them in Set.Set for aStar
