@@ -156,7 +156,7 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         trackTurn _ score rats@[_] = return (score,rats)
         trackTurn roundsLeft score rats = do
             liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats)
-            currentRats <- catMaybes <$> mapM moveSpecimen rats
+            currentRats <- filter ((<=100) . age) . catMaybes <$> mapM moveSpecimen rats
             childrenG <- breed currentRats
             children <- forM childrenG createSpecimen
             trackTurn (roundsLeft - 1) score (currentRats++children)
