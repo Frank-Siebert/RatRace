@@ -9,7 +9,7 @@ import Control.Comonad
 
 
 main :: IO ()
-main = runContest [blindRight]
+main = runContest [blind West, blind StandStill, blind East]
 
 square :: U2 Char
 square = fromListU2 ["abc","def","ghi"]
@@ -18,5 +18,5 @@ rt = evalState createRaceTrack (mkStdGen 100)
 
 single = U2 (U [] (U "" 'X' "") [])
 
-blindRight :: Player
-blindRight _ _ _ = East
+blind :: Move -> Player
+blind x _ _ _ = x
