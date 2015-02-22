@@ -1,4 +1,8 @@
-module RatRace.Rand where
+module RatRace.Rand (
+    module RatRace.Rand,
+    evalStateT,
+    runStateT
+) where
 
 import Control.Applicative
 import Control.Monad.State

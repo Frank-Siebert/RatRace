@@ -4,7 +4,6 @@ import Control.Applicative
 import Control.Arrow (second)
 import Control.Comonad
 import Control.Monad
-import Control.Monad.State (evalStateT,runStateT)
 import Control.Monad.Trans (lift,liftIO)
 import Data.Graph.AStar (aStar)
 import Data.Maybe (catMaybes)
@@ -159,7 +158,7 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
             currentRats <- filter ((<=100) . age) . catMaybes <$> mapM moveSpecimen rats
             childrenG <- breed currentRats
             children <- forM childrenG createSpecimen
-            trackTurn (roundsLeft - 1) score (currentRats++children)
+            trackTurn (roundsLeft - 1) score (children ++ currentRats)
         moveSpecimen :: Specimen -> RandT IO (Maybe Specimen)
         moveSpecimen rat =
             do g <- lower getStdGen
