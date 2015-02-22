@@ -138,8 +138,7 @@ runContest ps = newStdGen >>= evalStateT (
         liftIO $ print $ "A player scored " ++ show score ++ "."
         )
 
-data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int, ratCell :: FullCell, run :: Run } --
-
+data Specimen = Specimen { genome :: Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: Run } --
 
 scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
 scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (replicateM 10 randomGenome)
@@ -191,7 +190,7 @@ breed parents = let total = (sum $ map  fitnessScore parents) - 1
                         let (mother, other) = drawRat parents motherFitness
                             total' = total - fitnessScore mother
                         fatherFitness <- getRandomR (0, total')
-                        let (father, _) = drawRat parents fatherFitness
+                        let (father, _) = drawRat other fatherFitness
                         lower $ mixGenome (genome mother) (genome father)
 
 drawRat :: [Specimen] -> Int -> (Specimen,[Specimen])
@@ -200,5 +199,5 @@ drawRat = go id where
             let fitness = fitnessScore rat
              in if fitness > ness
                                 then (rat,difflist pool)
-                                else go ((rat:).difflist) pool (ness - fitness) -- TODO check if that is the right way for difflist
+                                else go (difflist.(rat:)) pool (ness - fitness) -- TODO check if that is the right way for difflist
         go f [] ness = error $ "Ness is still " ++ show ness ++ " at empty list; " ++ show (length (f []))
