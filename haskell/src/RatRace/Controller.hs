@@ -10,7 +10,7 @@ import Data.Graph.AStar (aStar)
 import Data.Maybe (catMaybes)
 import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
-import qualified Data.Set as Set (Set,fromList)
+import qualified Data.Set as Set (Set,fromList,delete)
 import Debug.Trace
 import System.Random (newStdGen, StdGen)
 
@@ -85,7 +85,7 @@ instance Show FullCell where
    show fc = show (cellType fc)++ show (position fc)
 
 neighbors :: FullCell -> Set.Set FullCell
-neighbors c = Set.fromList . catMaybes . map (move c) $ [North .. NorthWest]
+neighbors c = Set.delete c . Set.fromList . catMaybes . map (move c) $ [North .. NorthWest]
 
 mkContestant :: Player -> Contestant
 mkContestant p = Contestant {
@@ -130,9 +130,9 @@ runContest ps = newStdGen >>= evalStateT (
         liftIO $ print rt'
         cells <- lower generateCells
         liftIO $ print cells
-        oneRt <- fromJust . (_right2 >=> _right2 >=> _up2) <$> lower createRaceTrack
-        liftIO $ print (_here2 $ oneRt)
-        liftIO $ putStrLn $ "The neighbors are :" ++ show (neighbors . _here2 $ oneRt)
+        oneRt <- lower createRaceTrack
+        lift $ print $ checkRaceTrack oneRt
+        liftIO $ putStrLn "first checkRaceTrack finished"
         rt <- untilM checkRaceTrack (lower createRaceTrack)
         lift $ print $ checkRaceTrack rt
         score <- mapM (scoreTrack rt) contestants
@@ -155,6 +155,7 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         trackTurn _ score       [] = return (score,[])
         trackTurn _ score rats@[_] = return (score,rats)
         trackTurn roundsLeft score rats = do
+            liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats)
             currentRats <- catMaybes <$> mapM moveSpecimen rats
             childrenG <- breed currentRats
             children <- forM childrenG createSpecimen
