@@ -112,12 +112,7 @@ isGoal :: FullCell -> Bool
 isGoal = (>=49) . fst . position
 
 createRaceTrack :: Rand (U2Graph FullCell)
-createRaceTrack = do
-    colorU2 <- generateRaceTrack
-    cells <- generateCells
-    let result = buildFullCell cells colorU2
-    return result
-    -- TODO simple applicative / liftA2
+createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 
 runContest :: [Player] -> IO ()
 runContest ps = newStdGen >>= evalStateT (
