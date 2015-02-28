@@ -47,7 +47,7 @@ mixGenome mother father = do coin <- getRandom
                                    else (father,mother))
                           where
                              mix ([],recessive) = return recessive
-                             mix (d:ominant,recessive) = (d:) <$>
+                             mix (d:ominant,_:recessive) = (d:) <$>
                                      do x <- getRandom
                                         mix (if (x < genomeChangeChance)
                                                then (recessive,ominant)
