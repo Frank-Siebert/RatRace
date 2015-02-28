@@ -16,4 +16,4 @@ square = fromListU2 ["abc","def","ghi"]
 single = U2 (U [] (U "" 'X' "") [])
 
 blind :: Move -> Player
-blind x genome _ _ = seq genome x
+blind x genome = \_ _ -> x

@@ -41,6 +41,15 @@ iter n f g | n > 0     = g >=> iter (n-1) f g
 moveFocus :: Position -> U2Graph a -> Maybe (U2Graph a)
 moveFocus (x,y) = iter x _left2 _right2 >=> iter y _down2 _up2
 
+visionU2 :: Position -> U2 a -> Maybe (U2 a)
+visionU2 (x,y) u = ((iter x leftU2 rightU2 =<< iter y downU2 upU2 u))
+
+visionAt :: Position -> Vision -> Int
+visionAt (x,y) = maybe (-1) extract . visionU2 (x,y)
+
+view :: Move -> Vision -> Int
+view dir = visionAt (getOffset dir)
+
 buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where
     b this u = FullCell {
@@ -117,20 +126,9 @@ createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 runContest :: [Player] -> IO ()
 runContest ps = newStdGen >>= evalStateT (
      do let contestants = map mkContestant ps
-        genome <- lower randomGenome
-        liftIO $ print genome
-        liftIO $ putStrLn "Now for some more stuff"
-        rt' <- lower generateRaceTrack
-        liftIO $ print rt'
-        cells <- lower generateCells
-        liftIO $ print cells
-        oneRt <- lower createRaceTrack
-        lift $ print $ checkRaceTrack oneRt
-        liftIO $ putStrLn "first checkRaceTrack finished"
         rt <- untilM checkRaceTrack (lower createRaceTrack)
-        lift $ print $ checkRaceTrack rt
         score <- mapM (scoreTrack rt) contestants
-        liftIO $ print $ "A player scored " ++ show score ++ "."
+        liftIO $ print $ "The players scored " ++ show score ++ "."
         )
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
