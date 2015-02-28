@@ -19,11 +19,7 @@ lower :: (Monad m) => Rand a -> RandT m a
 lower action = StateT $ \s -> return (runState action s)
 
 randomGenome :: Rand Genome
-randomGenome = nf <$> replicateM 100 getRandom
-
-nf :: [a] -> [a]
-nf [] = []
-nf (x:xs) = x `seq` x:(nf xs)
+randomGenome = replicateM 100 getRandom
 
 getRandom :: (Random a) => Rand a
 getRandom = do (x,g) <- (random <$> get)

@@ -149,6 +149,7 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (playerStrategy player $ genome)
         startingCells = map _here2 $ admissibleStartingCells track
         trackTurn :: Int -> Int -> [Specimen] -> RandT IO (Int,[Specimen])
+        trackTurn _  (-1) _        = return (-1,[]) -- cannot happen, but makes score strict
         trackTurn 0 score rats     = return (score,rats)
         trackTurn _ score       [] = return (score,[])
         trackTurn _ score rats@[_] = return (score,rats)
@@ -157,11 +158,11 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
             movedRats <- catMaybes <$> mapM moveSpecimen rats
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
-            let currentRats = nf $ filter ((<=100) . age) . map fst $ scoredRats
-            childrenG <- map nf <$> breed currentRats
-            childrenM <- nf <$> lower (mapM mutateGenome childrenG)
-            children <- nf <$> forM childrenM createSpecimen
-            trackTurn (roundsLeft - 1) score (children ++ currentRats)
+            let currentRats = filter ((<=100) . age) . map fst $ scoredRats
+            childrenG <- breed currentRats
+            childrenM <- lower (mapM mutateGenome childrenG)
+            children <- forM childrenM createSpecimen
+            trackTurn (roundsLeft - 1) (score + turnScore) (children ++ currentRats)
         moveSpecimen :: Specimen -> RandT IO (Maybe Specimen)
         moveSpecimen rat =
             do g <- lower getStdGen
