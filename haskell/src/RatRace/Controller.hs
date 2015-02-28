@@ -137,17 +137,17 @@ data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int
 
 scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
 scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (replicateM 10 randomGenome)
-                             (score,_) <- trackTurn gameTurns initialScore initialRats
+                             score <- trackTurn gameTurns initialScore initialRats
                              return score
     where
         createSpecimen :: Genome -> RandT IO Specimen
         createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (playerStrategy player $ genome)
         startingCells = map _here2 $ admissibleStartingCells track
-        trackTurn :: Int -> Int -> [Specimen] -> RandT IO (Int,[Specimen])
-        trackTurn _  (-1) _        = return (-1,[]) -- cannot happen, but makes score strict
-        trackTurn 0 score rats     = return (score,rats)
-        trackTurn _ score       [] = return (score,[])
-        trackTurn _ score rats@[_] = return (score,rats)
+        trackTurn :: Int -> Int -> [Specimen] -> RandT IO Int
+        trackTurn _  (-1) _        = return (-1) -- cannot happen, but makes score strict
+        trackTurn 0 score rats     = return score
+        trackTurn _ score       [] = return score
+        trackTurn _ score rats@[_] = return score
         trackTurn roundsLeft score rats = do
             if roundsLeft `rem` 1000 == 0 then liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats) else return ()
             movedRats <- catMaybes <$> mapM moveSpecimen rats
