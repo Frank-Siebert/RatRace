@@ -136,9 +136,9 @@ runContest ps = newStdGen >>= evalStateT (
 data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
 
 scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
-scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (replicateM 10 randomGenome)
-                             score <- trackTurn gameTurns initialScore initialRats
-                             return score
+scoreTrack track player = lower (replicateM 10 randomGenome) >>=
+                          mapM createSpecimen >>=
+                          trackTurn gameTurns initialScore
     where
         createSpecimen :: Genome -> RandT IO Specimen
         createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (playerStrategy player $ genome)
