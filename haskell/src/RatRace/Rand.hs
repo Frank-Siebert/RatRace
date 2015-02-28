@@ -27,13 +27,13 @@ nf (x:xs) = x `seq` x:(nf xs)
 
 getRandom :: (Random a) => Rand a
 getRandom = do (x,g) <- (random <$> get)
-               put g
-               return x
+               g `seq` put g
+               x `seq` return x
 
 getRandomR :: (Random a, Monad m, Functor m) => (a,a) -> RandT m a
 getRandomR range = do (x,g) <- (randomR range <$> get)
-                      put g
-                      return x
+                      g `seq` put g
+                      x `seq` return x
 
 getStdGen :: (Monad m, Functor m) => RandT m StdGen
 getStdGen = do (g,h) <- (split <$> get)

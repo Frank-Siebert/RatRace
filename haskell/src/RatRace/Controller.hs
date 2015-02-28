@@ -138,7 +138,7 @@ runContest ps = newStdGen >>= evalStateT (
         liftIO $ print $ "A player scored " ++ show score ++ "."
         )
 
-data Specimen = Specimen { genome :: Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: Run } --
+data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
 
 scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
 scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (replicateM 10 randomGenome)
@@ -153,9 +153,12 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         trackTurn _ score       [] = return (score,[])
         trackTurn _ score rats@[_] = return (score,rats)
         trackTurn roundsLeft score rats = do
-            liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats)
-            currentRats <- nf <$> filter ((<=100) . age) . catMaybes <$> mapM moveSpecimen rats
-            childrenG <- nf <$> breed currentRats
+            if roundsLeft `rem` 1000 == 0 then liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats) else return ()
+            movedRats <- catMaybes <$> mapM moveSpecimen rats
+            scoredRats <- mapM resetScorer movedRats
+            let turnScore = sum . map snd $ scoredRats
+            let currentRats = nf $ filter ((<=100) . age) . map fst $ scoredRats
+            childrenG <- map nf <$> breed currentRats
             childrenM <- nf <$> lower (mapM mutateGenome childrenG)
             children <- nf <$> forM childrenM createSpecimen
             trackTurn (roundsLeft - 1) score (children ++ currentRats)
@@ -169,8 +172,8 @@ scoreTrack track player = do initialRats <- mapM createSpecimen =<< lower (repli
         resetScorer :: Specimen -> RandT IO (Specimen,Int)
         resetScorer rat = if isGoal (ratCell rat)
                                then do newPos <- drawFromList startingCells
-                                       let rat' = rat { ratCell = newPos, age = 0 }
-                                       return (rat',0)
+                                       let rat' = rat { ratCell = newPos, age = 0, completedRuns = 1 + completedRuns rat }
+                                       return (rat',1)
                                else return (rat,0)
 
 moveRat :: StdGen -> Specimen -> Maybe FullCell
@@ -185,19 +188,20 @@ breed :: [Specimen] -> RandT IO [Genome]
 breed  [] = return []
 breed [_] = return []
 breed parents = let total = (sum $ map  fitnessScore parents) - 1
-                 in replicateM 10 $ do
+                 in lower $ replicateM 10 $ do
                         motherFitness <- getRandomR (0, total)
-                        let (mother, other) = drawRat parents motherFitness
+                        let (mother, partial) = drawRat parents motherFitness
                             total' = total - fitnessScore mother
                         fatherFitness <- getRandomR (0, total')
-                        let (father, _) = drawRat other fatherFitness
-                        lower $ mixGenome (genome mother) (genome father)
+                        let fatherFitness' = if fatherFitness >=partial then fatherFitness + fitnessScore mother else fatherFitness
+                        let (father, _) = drawRat parents fatherFitness
+                        mixGenome (genome mother) (genome father)
 
-drawRat :: [Specimen] -> Int -> (Specimen,[Specimen])
-drawRat = go id where
-        go difflist (rat:pool) ness =
+drawRat :: [Specimen] -> Int -> (Specimen,Int)
+drawRat = go 0 where
+          go s (rat:pool) ness =
             let fitness = fitnessScore rat
              in if fitness > ness
-                                then (rat,difflist pool)
-                                else go (difflist.(rat:)) pool (ness - fitness) -- TODO check if that is the right way for difflist
-        go f [] ness = error $ "Ness is still " ++ show ness ++ " at empty list; " ++ show (length (f []))
+                    then (rat,s)
+                    else go (s + fitness) pool (ness - fitness)
+          go f [] ness = error $ "Ness is still " ++ show ness ++ " at empty list; " ++ show f
