@@ -122,6 +122,7 @@ isGoal = (>=49) . fst . position
 
 createRaceTrack :: Rand (U2Graph FullCell)
 createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
+--createRaceTrack = buildFullCell <$> pure (replicate 16 (Teleporter 0 0)) <*> generateRaceTrack
 
 runContest :: [Player] -> IO ()
 runContest ps = newStdGen >>= evalStateT (
