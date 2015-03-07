@@ -1,22 +1,16 @@
 module RatRace.Rand (
     module RatRace.Rand,
-    evalStateT,
-    runStateT
+    evalState
 ) where
 
 import Control.Applicative
 import Control.Monad.State.Strict
-import qualified Control.Monad.Identity
 import System.Random
 
 import RatRace.Types
 import RatRace.Util
 
-type RandT m = StateT StdGen m
-type Rand = RandT Control.Monad.Identity.Identity
-
-lower :: (Monad m) => Rand a -> RandT m a
-lower action = StateT $ \s -> return (runState action s)
+type Rand = State StdGen
 
 randomGenome :: Rand Genome
 randomGenome = replicateM 100 getRandom
@@ -26,12 +20,12 @@ getRandom = do (x,g) <- (random <$> get)
                g `seq` put g
                x `seq` return x
 
-getRandomR :: (Random a, Monad m, Functor m) => (a,a) -> RandT m a
+getRandomR :: (Random a) => (a,a) -> Rand a
 getRandomR range = do (x,g) <- (randomR range <$> get)
                       g `seq` put g
                       x `seq` return x
 
-getStdGen :: (Monad m, Functor m) => RandT m StdGen
+getStdGen :: Rand StdGen
 getStdGen = do (g,h) <- (split <$> get)
                put g
                return h
@@ -63,7 +57,7 @@ generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackLength (replicat
 generateColor :: Rand Color
 generateColor = getRandomR (0,15)
 
-drawFromList :: (Monad m, Functor m) => [a] -> RandT m a
+drawFromList :: [a] -> Rand a
 drawFromList xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
 generateCells :: Rand [Cell]

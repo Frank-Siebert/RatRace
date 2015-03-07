@@ -112,46 +112,46 @@ createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 --createRaceTrack = buildFullCell <$> pure (replicate 16 (Teleporter 0 0)) <*> generateRaceTrack
 
 runContest :: [Player] -> IO ()
-runContest ps = newStdGen >>= evalStateT (
-     do rt <- untilM checkRaceTrack (lower createRaceTrack)
-        score <- mapM (scoreTrack rt) ps
-        liftIO $ print $ "The players scored " ++ show score ++ "."
-        )
+runContest ps =
+  do g <- newStdGen
+     let score = evalState
+           (do rt <- untilM checkRaceTrack (createRaceTrack)
+               mapM (scoreTrack rt) ps) g
+     putStrLn $ "The players scored " ++ show score ++ "."
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
 
-scoreTrack :: U2Graph FullCell -> Player -> RandT IO Int
-scoreTrack track player = lower (replicateM initialRatCount randomGenome) >>=
+scoreTrack :: U2Graph FullCell -> Player -> Rand Int
+scoreTrack track player = replicateM initialRatCount randomGenome >>=
                           mapM createSpecimen >>=
                           trackTurn gameTurns initialScore
     where
-        createSpecimen :: Genome -> RandT IO Specimen
+        createSpecimen :: Genome -> Rand Specimen
         createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (player genome)
         startingCells = map _here2 $ admissibleStartingCells track
-        trackTurn :: Int -> Int -> [Specimen] -> RandT IO Int
+        trackTurn :: Int -> Int -> [Specimen] -> Rand Int
         trackTurn _  (-1) _        = return (-1) -- cannot happen, but makes score strict
         trackTurn 0 score rats     = return score
         trackTurn _ score       [] = return score
         trackTurn _ score rats@[_] = return score
         trackTurn roundsLeft score rats = do
-            if roundsLeft `rem` 1000 == 0 then liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats) else return ()
             let youngRats = filter ((<100) . age) rats
             movedRats <- catMaybes <$> mapM moveSpecimen youngRats
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
             let currentRats = map fst $ scoredRats
             childrenG <- breed currentRats
-            childrenM <- lower (mapM mutateGenome childrenG)
+            childrenM <- mapM mutateGenome childrenG
             children <- forM childrenM createSpecimen
             trackTurn (roundsLeft - 1) (score + turnScore) (children ++ currentRats)
-        moveSpecimen :: Specimen -> RandT IO (Maybe Specimen)
+        moveSpecimen :: Specimen -> Rand (Maybe Specimen)
         moveSpecimen rat =
-            do g <- lower getStdGen
+            do g <- getStdGen
                let newPos = moveRat g rat
                case newPos of
                   Nothing -> return Nothing
                   Just (newPos') -> return . Just $ rat { ratCell = newPos', age = age rat + 1 } -- TODO increase score, die on age...
-        resetScorer :: Specimen -> RandT IO (Specimen,Int)
+        resetScorer :: Specimen -> Rand (Specimen,Int)
         resetScorer rat = if isGoal (ratCell rat)
                                then do newPos <- drawFromList startingCells
                                        let rat' = rat { ratCell = newPos, age = 0, completedRuns = 1 + completedRuns rat }
@@ -166,11 +166,11 @@ fitnessScore :: Specimen -> Int
 fitnessScore rat = 1 + completedRuns rat * 50 + fst (position $ ratCell rat)
 -- need admissibleStartingCells, so maybe just return genome?
 -- | only the children, the incoming list is not returned
-breed :: [Specimen] -> RandT IO [Genome]
+breed :: [Specimen] -> Rand [Genome]
 breed  [] = return []
 breed [_] = return []
 breed parents = let total = (sum $ map  fitnessScore parents) - 1
-                 in lower $ replicateM 10 $ do
+                 in replicateM 10 $ do
                         motherFitness <- getRandomR (0, total)
                         let (mother, partial) = drawRat parents motherFitness
                             total' = total - fitnessScore mother
