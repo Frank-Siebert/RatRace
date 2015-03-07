@@ -113,11 +113,13 @@ createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 
 runContest :: [Player] -> IO ()
 runContest ps =
-  do g <- newStdGen
-     let score = evalState
-           (do rt <- untilM checkRaceTrack (createRaceTrack)
-               mapM (scoreTrack rt) ps) g
-     putStrLn $ "The players scored " ++ show score ++ "."
+  do gs <- take 50 . randomGens <$> newStdGen
+     putStrLn $ "The players scored " ++ show (runGame ps (head gs)) ++ "."
+
+runGame :: [Player] -> StdGen -> [Int]
+runGame ps = evalState $
+    do rt <- untilM checkRaceTrack (createRaceTrack)
+       mapM (scoreTrack rt) ps
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
 
