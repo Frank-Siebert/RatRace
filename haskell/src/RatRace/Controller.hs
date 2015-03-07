@@ -27,12 +27,6 @@ data FullCell = FullCell {
    move     :: Move -> Maybe FullCell
 }
 
-data Contestant = Contestant {
-   playerStrategy :: Player,
-   liveRats :: [Specimen],
-   score :: Double
-}
-
 iter :: (Monad m) => Int -> (a -> m a) -> (a -> m a) -> a -> m a
 iter n f g | n > 0     = g >=> iter (n-1) f g
            | n < 0     = f >=> iter (n-1) f g
@@ -95,13 +89,6 @@ instance Show FullCell where
 neighbors :: FullCell -> Set.Set FullCell
 neighbors c = Set.delete c . Set.fromList . catMaybes . map (move c) $ [North .. NorthWest]
 
-mkContestant :: Player -> Contestant
-mkContestant p = Contestant {
-    playerStrategy = p,
-    liveRats = [],
-    score = 1.0
-}
-
 checkRaceTrack :: U2Graph FullCell -> Bool
 checkRaceTrack = (>=10) . length . admissibleStartingCells
 
@@ -126,21 +113,20 @@ createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 
 runContest :: [Player] -> IO ()
 runContest ps = newStdGen >>= evalStateT (
-     do let contestants = map mkContestant ps
-        rt <- untilM checkRaceTrack (lower createRaceTrack)
-        score <- mapM (scoreTrack rt) contestants
+     do rt <- untilM checkRaceTrack (lower createRaceTrack)
+        score <- mapM (scoreTrack rt) ps
         liftIO $ print $ "The players scored " ++ show score ++ "."
         )
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
 
-scoreTrack :: U2Graph FullCell -> Contestant -> RandT IO Int
-scoreTrack track player = lower (replicateM 10 randomGenome) >>=
+scoreTrack :: U2Graph FullCell -> Player -> RandT IO Int
+scoreTrack track player = lower (replicateM initialRatCount randomGenome) >>=
                           mapM createSpecimen >>=
                           trackTurn gameTurns initialScore
     where
         createSpecimen :: Genome -> RandT IO Specimen
-        createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (playerStrategy player $ genome)
+        createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (player genome)
         startingCells = map _here2 $ admissibleStartingCells track
         trackTurn :: Int -> Int -> [Specimen] -> RandT IO Int
         trackTurn _  (-1) _        = return (-1) -- cannot happen, but makes score strict
@@ -149,10 +135,11 @@ scoreTrack track player = lower (replicateM 10 randomGenome) >>=
         trackTurn _ score rats@[_] = return score
         trackTurn roundsLeft score rats = do
             if roundsLeft `rem` 1000 == 0 then liftIO $ putStrLn $ "roundsLeft " ++ show roundsLeft ++ ", live rats= " ++ show (length rats) else return ()
-            movedRats <- catMaybes <$> mapM moveSpecimen rats
+            let youngRats = filter ((<100) . age) rats
+            movedRats <- catMaybes <$> mapM moveSpecimen youngRats
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
-            let currentRats = filter ((<=100) . age) . map fst $ scoredRats
+            let currentRats = map fst $ scoredRats
             childrenG <- breed currentRats
             childrenM <- lower (mapM mutateGenome childrenG)
             children <- forM childrenM createSpecimen

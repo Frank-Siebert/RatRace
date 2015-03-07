@@ -11,6 +11,12 @@ raceTrackLength = 54
 raceTrackWidth :: Int
 raceTrackWidth = 15
 
+rounds :: Int
+rounds = 50
+
+initialRatCount :: Int
+initialRatCount = 15
+
 genomeLength :: Int
 genomeLength = 100
 
