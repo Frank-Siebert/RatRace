@@ -5,7 +5,9 @@ import Control.Arrow (second)
 import Control.Comonad
 import Control.Monad
 import Control.Monad.Trans (lift,liftIO)
+import Control.Parallel.Strategies
 import Data.Graph.AStar (aStar)
+import Data.List (transpose)
 import Data.Maybe (catMaybes)
 import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
@@ -114,7 +116,14 @@ createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 runContest :: [Player] -> IO ()
 runContest ps =
   do gs <- take 50 . randomGens <$> newStdGen
-     putStrLn $ "The players scored " ++ show (runGame ps (head gs)) ++ "."
+     let results :: [[Int]]
+         results = parMap rdeepseq (runGame ps) gs
+     putStrLn $ "The players scored " ++ (unlines . map show $ results ) ++ "."
+     let scores = map geometricMean . transpose $ results
+     putStrLn $ "Final scores: " ++ show scores
+
+geometricMean :: [Int] -> Double
+geometricMean xs = exp . (/ (fromInteger . toInteger . length) xs) . sum . map (log . fromInteger . toInteger) $ xs
 
 runGame :: [Player] -> StdGen -> [Int]
 runGame ps = evalState $
