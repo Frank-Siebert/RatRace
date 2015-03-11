@@ -12,7 +12,7 @@ raceTrackWidth :: Int
 raceTrackWidth = 15
 
 rounds :: Int
-rounds = 50
+rounds = 2000
 
 initialRatCount :: Int
 initialRatCount = 15

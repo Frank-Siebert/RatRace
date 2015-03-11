@@ -18,6 +18,7 @@ randomGens g = let (a,b) = split g in a : randomGens b
 randomGenome :: Rand Genome
 randomGenome = replicateM 100 getRandom
 
+{-# INLINE getRandom #-}
 getRandom :: (Random a) => Rand a
 getRandom = do (x,g) <- (random <$> get)
                g `seq` put g
