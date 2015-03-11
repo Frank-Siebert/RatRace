@@ -26,9 +26,11 @@ forward = [NorthEast,East,SouthEast]
 
 type Scoring = [Bool] -> Int
 
+{-# INLINE unaryScoring #-}
 unaryScoring :: Scoring
 unaryScoring = length . filter id
 
+{-# INLINE binaryScoring #-}
 binaryScoring :: Scoring
 binaryScoring = go 0 where
                 go (-9) [] = 0 -- strictness
@@ -38,7 +40,7 @@ binaryScoring = go 0 where
 colorScoringPlayer :: Scoring -> Player
 colorScoringPlayer scoring genome =
     let scores :: [Int]
-        scores = map (length . filter id) . transpose . chunksOf 16 . take 96 $ genome
+        scores = map scoring . transpose . chunksOf 16 . take 96 $ genome
         score (-1) = -99
         score   x  = scores !! x
      in \g v -> fst . maximumBy (comparing snd ) . map (\x -> (x, score $ view x v)) $ forward
