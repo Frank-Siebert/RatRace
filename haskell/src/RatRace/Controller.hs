@@ -115,7 +115,7 @@ createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
 
 runContest :: [Player] -> IO ()
 runContest ps =
-  do gs <- take 50 . randomGens <$> newStdGen
+  do gs <- take rounds . randomGens <$> newStdGen
      let results :: [[Int]]
          results = parMap rdeepseq (runGame ps) gs
      putStrLn $ "The players scored " ++ (unlines . map show $ results ) ++ "."
