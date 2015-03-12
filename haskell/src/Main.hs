@@ -11,7 +11,8 @@ import Data.Ord (comparing)
 
 
 main :: IO ()
-main = runContest [colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, blind West]
+--main = runContest [myPlayer,colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, blind West]
+main = runContest [myPlayer]
 
 square :: U2 Char
 square = fromListU2 ["abc","def","ghi"]
@@ -44,3 +45,24 @@ colorScoringPlayer scoring genome =
         score (-1) = -99
         score   x  = scores !! x
      in \g v -> fst . maximumBy (comparing snd ) . map (\x -> (x, score $ view x v)) $ forward
+
+data Trap = T Int Position
+mkTrap :: [Bool] -> Trap
+mkTrap genome = T (binaryScoring . take 4 $ genome) (toOffset . drop 4 $ genome,toOffset . drop 8 $ genome) where
+    toOffset g = let n = binaryScoring (take 4 g)
+                  in n `rem` 3 -1
+
+myPlayer :: Player
+myPlayer genome =
+    let scores :: [Int]
+        scores = map binaryScoring . chunksOf 4 . take 64 $ genome
+        score (-1) = -99
+        score   x  = scores !! x
+        trap1      = mkTrap (drop 64 genome)
+        trap2      = mkTrap (drop 86 genome)
+     in \g v -> let v'    = ((\x -> (score x,x)) <$> v) =>> pulldown trap1 =>> pulldown trap2
+                    pulldown :: Trap -> (U2 (Int,Int)) -> (Int,Int)
+                    pulldown (T c p) u = case extract <$> visionU2 p u of
+                       Just (_,c) -> (-50,c)
+                       _          ->  extract u
+                 in fst . maximumBy (comparing snd ) . map (\x -> (x, view x (fst <$> v'))) $ forward

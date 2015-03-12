@@ -38,7 +38,7 @@ type Color = Int
 
 type Vision = U2 Color
 
-data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest deriving (Enum)
+data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest deriving (Enum, Bounded)
 
 getOffset :: Move -> Position
 getOffset StandStill = ( 0, 0)
