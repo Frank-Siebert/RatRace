@@ -130,7 +130,7 @@ runGame ps = evalState $
     do rt <- untilM checkRaceTrack (createRaceTrack)
        mapM (scoreTrack rt) ps
 
-data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, ratCell :: FullCell, run :: !Run } --
+data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, run :: !Run, ratCell :: FullCell } --
 
 scoreTrack :: U2Graph FullCell -> Player -> Rand Int
 scoreTrack track player = replicateM initialRatCount randomGenome >>=
@@ -138,7 +138,7 @@ scoreTrack track player = replicateM initialRatCount randomGenome >>=
                           trackTurn gameTurns initialScore
     where
         createSpecimen :: Genome -> Rand Specimen
-        createSpecimen genome = do Specimen <$> pure genome <*> pure 0 <*> pure 0 <*> drawFromList startingCells <*> pure (player genome)
+        createSpecimen genome = do Specimen genome 0 0 (player genome) <$> drawFromList startingCells
         startingCells = map _here2 $ admissibleStartingCells track
         trackTurn :: Int -> Int -> [Specimen] -> Rand Int
         trackTurn _  (-1) _        = return (-1) -- cannot happen, but makes score strict
@@ -151,9 +151,7 @@ scoreTrack track player = replicateM initialRatCount randomGenome >>=
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
             let currentRats = map fst $ scoredRats
-            childrenG <- breed currentRats
-            childrenM <- mapM mutateGenome childrenG
-            children <- forM childrenM createSpecimen
+            children <- (breed currentRats >>= mapM mutateGenome >>= mapM createSpecimen)
             trackTurn (roundsLeft - 1) (score + turnScore) (children ++ currentRats)
         moveSpecimen :: Specimen -> Rand (Maybe Specimen)
         moveSpecimen rat =
@@ -161,7 +159,7 @@ scoreTrack track player = replicateM initialRatCount randomGenome >>=
                let newPos = moveRat g rat
                case newPos of
                   Nothing -> return Nothing
-                  Just (newPos') -> return . Just $ rat { ratCell = newPos', age = age rat + 1 } -- TODO increase score, die on age...
+                  Just (newPos') -> return . Just $ rat { ratCell = newPos', age = age rat + 1 }
         resetScorer :: Specimen -> Rand (Specimen,Int)
         resetScorer rat = if isGoal (ratCell rat)
                                then do newPos <- drawFromList startingCells
