@@ -65,4 +65,4 @@ myPlayer genome =
                     pulldown (T c p) u = case extract <$> visionU2 p u of
                        Just (_,c) -> (-50,c)
                        _          ->  extract u
-                 in fst . maximumBy (comparing snd ) . map (\x -> (x, view x (fst <$> v'))) $ forward
+                 in fst . maximumBy (comparing snd ) . map (\x -> (x, 8* fst (getOffset x)+view x (fst <$> v'))) $ [North,NorthEast,East,SouthEast,South]
