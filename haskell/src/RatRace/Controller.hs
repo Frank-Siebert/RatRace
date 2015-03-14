@@ -118,18 +118,18 @@ createRaceTrack l w = buildFullCell <$> generateCells <*> generateRaceTrack l w
 options :: [OptDescr (SimulationOptions -> SimulationOptions)]
 options =
     [ Option ['g','r']     ["games","rounds"]
-        (ReqArg (\x opts -> opts { rounds = read x }) "rounds?")
-        "rounds"
+        (ReqArg (\x opts -> opts { rounds = read x }) "n")
+        ("rounds (default: "++show (rounds defaultOptions)++")")
     , Option ['t'] ["turns"]
-        (ReqArg (\x opts -> opts { gameTurns = read x }) "turns?")
-        "show version number"
+        (ReqArg (\x opts -> opts { gameTurns = read x }) "n")
+        ("game turns (default: "++show (gameTurns defaultOptions)++")")
     ]
 
 compilerOpts :: [String] -> SimulationOptions
 compilerOpts argv =
     case getOpt Permute options argv of
          (o,_,[]  ) -> foldl (flip id) defaultOptions o
-         (_,_,errs) -> error (concat errs ++ usageInfo "RatRace" options)
+         (_,_,errs) -> error (concat errs ++ usageInfo "RatRace command line options" options)
 
 runContest :: [Player] -> IO ()
 runContest ps =
