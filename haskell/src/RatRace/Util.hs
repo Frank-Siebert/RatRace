@@ -66,6 +66,7 @@ toU2Graph c (U2 (U ls (U ds h us) rs)) = g
 toU2GraphW :: (U2Graph b -> U2 a -> b) -> U2 a -> U2Graph b
 toU2GraphW f u = toU2Graph f (duplicate u)
 
+-- | untilM p action  repeats action until p is satisfied
 untilM :: (Monad m) => (a -> Bool) -> m a -> m a
 untilM p action = do x <- action
                      if (p x) then return x else untilM p action

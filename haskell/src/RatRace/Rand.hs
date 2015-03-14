@@ -70,13 +70,9 @@ generateCells = do te1 <- genCell Teleporter 4
                    tr1 <- liftA2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
                    tr2 <- liftA2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
                    shuffle $ [Wall,Wall,te1,te2,invertCell te1, invertCell te2, tr1,tr2]++replicate 8 emptyCell where
-           genCell ctor r = dropWhileM (==ctor 0 0) $ liftA2 ctor (getRandomR (-r,r)) (getRandomR (-r,r))
+           genCell ctor r = untilM (/=ctor 0 0) $ liftA2 ctor (getRandomR (-r,r)) (getRandomR (-r,r))
            invertCell (Teleporter a b) = Teleporter (-a) (-b)
            invertCell c = error "invertCell on a non-Teleporter"
-
-dropWhileM :: (Monad m) => (a -> Bool) -> m a -> m a
-dropWhileM p action = do x <- action
-                         if p x then dropWhileM p action else return x
 
 shuffle :: [a] -> Rand [a]
 shuffle xs = go (length xs) xs where
