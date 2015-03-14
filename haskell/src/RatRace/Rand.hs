@@ -49,10 +49,9 @@ mixGenome mother father = do coin <- getRandom
                                                else (ominant,recessive))
 
 mutateGenome :: Double -> Genome -> Rand Genome
-mutateGenome _ []              = return []
-mutateGenome flipChance (g:gs) =
-    do c <- getRandom
-       ((if c < flipChance then not g else g):) <$>  mutateGenome flipChance gs
+mutateGenome flipChance = mapM (\x ->
+    (do c <- getRandom
+        return $ if c > flipChance then x else not x))
 
 addPos :: [[a]] -> [[(Position,a)]]
 addPos = zipWith (\x -> map (\(y,a)->((x,y),a))) [0..] . map (zip [0..])
