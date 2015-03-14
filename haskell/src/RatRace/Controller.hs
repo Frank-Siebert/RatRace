@@ -155,7 +155,7 @@ runGame config ps = evalState $
     do rt <- untilM checkRaceTrack (createRaceTrack (raceTrackLength config) (raceTrackWidth config))
        mapM (scoreTrack config rt) ps
 
-data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, run :: !Run, ratCell :: FullCell } --
+data Specimen = Specimen { genome :: !Genome, completedRuns :: {-# UNPACK #-} !Int, age :: {-# UNPACK #-} !Int, run :: !Run, ratCell :: FullCell } --
 
 scoreTrack :: SimulationOptions -> U2Graph FullCell -> Player -> Rand Int
 scoreTrack config track player = replicateM (initialRatCount config) randomGenome >>=
