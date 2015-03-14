@@ -5,33 +5,29 @@ import Control.Comonad
 import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
-raceTrackLength :: Int
-raceTrackLength = 54
+data SimulationOptions = SimulationOptions {
+    raceTrackLength :: Int,
+    raceTrackWidth :: Int,
+    rounds :: Int,
+    initialRatCount :: Int,
+    genomeLength :: Int,
+    genomeChangeChance :: Double,
+    genomeFlipChance :: Double,
+    gameTurns :: Int,
+    initialScore :: Int
+} deriving (Show)
 
-raceTrackWidth :: Int
-raceTrackWidth = 15
-
-rounds :: Int
-rounds = 2000
-
-initialRatCount :: Int
-initialRatCount = 15
-
-genomeLength :: Int
-genomeLength = 100
-
-genomeChangeChance :: Double
-genomeChangeChance = 0.05
-
-genomeFlipChance :: Double
-genomeFlipChance = 0.01
-
-gameTurns :: Int
-gameTurns = 10000
-
-initialScore :: Int
-initialScore = 1
-
+defaultOptions = SimulationOptions {
+    raceTrackLength = 54,
+    raceTrackWidth = 15,
+    rounds = 20,
+    initialRatCount = 15,
+    genomeLength = 100,
+    genomeChangeChance = 0.05,
+    genomeFlipChance = 0.01,
+    gameTurns = 10000,
+    initialScore = 1
+}
 
 type Genome = [Bool]
 type Color = Int

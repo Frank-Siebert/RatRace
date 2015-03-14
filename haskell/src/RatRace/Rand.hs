@@ -43,20 +43,20 @@ mixGenome mother father = do coin <- getRandom
                              mix ([],recessive) = return recessive
                              mix (d:ominant,_:recessive) = (d:) <$>
                                      do x <- getRandom
-                                        mix (if (x < genomeChangeChance)
+                                        mix (if (x < genomeChangeChance defaultOptions)
                                                then (recessive,ominant)
                                                else (ominant,recessive))
 
 mutateGenome :: Genome -> Rand Genome
 mutateGenome [] = return []
 mutateGenome (g:gs) = do c <- getRandom
-                         ((if c < genomeFlipChance then not g else g):) <$>  mutateGenome gs
+                         ((if c < genomeFlipChance defaultOptions then not g else g):) <$>  mutateGenome gs
 
 addPos :: [[a]] -> [[(Position,a)]]
 addPos = zipWith (\x -> map (\(y,a)->((x,y),a))) [0..] . map (zip [0..])
 
-generateRaceTrack :: Rand (U2 (Position,Color))
-generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackLength (replicateM raceTrackWidth generateColor)
+generateRaceTrack :: Int -> Int -> Rand (U2 (Position,Color))
+generateRaceTrack l w = fromListU2 . addPos <$> replicateM l (replicateM w generateColor)
 
 generateColor :: Rand Color
 generateColor = getRandomR (0,15)

@@ -13,6 +13,8 @@ import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList,delete)
 import Debug.Trace
+import System.Console.GetOpt
+import System.Environment (getArgs)
 import System.Random (newStdGen, StdGen)
 
 import RatRace.Types
@@ -109,15 +111,35 @@ isAdmissibleStartingCell track = maybe False ((<=100) . length) (
 isGoal :: FullCell -> Bool
 isGoal = (>=49) . fst . position
 
-createRaceTrack :: Rand (U2Graph FullCell)
-createRaceTrack = buildFullCell <$> generateCells <*> generateRaceTrack
+createRaceTrack :: Int -> Int -> Rand (U2Graph FullCell)
+createRaceTrack l w = buildFullCell <$> generateCells <*> generateRaceTrack l w
 --createRaceTrack = buildFullCell <$> pure (replicate 16 (Teleporter 0 0)) <*> generateRaceTrack
+
+options :: [OptDescr (SimulationOptions -> SimulationOptions)]
+options =
+    [ Option ['g','r']     ["games","rounds"]
+        (ReqArg (\x opts -> opts { rounds = read x }) "rounds?")
+        "rounds"
+    , Option ['t'] ["turns"]
+        (ReqArg (\x opts -> opts { gameTurns = read x }) "turns?")
+        "show version number"
+    ]
+
+compilerOpts :: [String] -> SimulationOptions
+compilerOpts argv =
+    case getOpt Permute options argv of
+         (o,_,[]  ) -> foldl (flip id) defaultOptions o
+         (_,_,errs) -> error (concat errs ++ usageInfo "RatRace" options)
 
 runContest :: [Player] -> IO ()
 runContest ps =
-  do gs <- take rounds . randomGens <$> newStdGen
+  do argv <- getArgs
+     let config :: SimulationOptions
+         config = compilerOpts argv
+     putStrLn $ "With options " ++ show config
+     gs <- take (rounds config) . randomGens <$> newStdGen
      let results :: [[Int]]
-         results = parMap rdeepseq (runGame ps) gs
+         results = parMap rdeepseq (runGame config ps) gs
      putStrLn $ "The players scored " ++ (unlines . map show $ results ) ++ "."
      let scores = map geometricMean . transpose $ results
      putStrLn $ "Final scores: " ++ show scores
@@ -125,17 +147,17 @@ runContest ps =
 geometricMean :: [Int] -> Double
 geometricMean xs = exp . (/ (fromInteger . toInteger . length) xs) . sum . map (log . fromInteger . toInteger) $ xs
 
-runGame :: [Player] -> StdGen -> [Int]
-runGame ps = evalState $
-    do rt <- untilM checkRaceTrack (createRaceTrack)
-       mapM (scoreTrack rt) ps
+runGame :: SimulationOptions -> [Player] -> StdGen -> [Int]
+runGame config ps = evalState $
+    do rt <- untilM checkRaceTrack (createRaceTrack (raceTrackLength config) (raceTrackWidth config))
+       mapM (scoreTrack config rt) ps
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: !Int, age :: !Int, run :: !Run, ratCell :: FullCell } --
 
-scoreTrack :: U2Graph FullCell -> Player -> Rand Int
-scoreTrack track player = replicateM initialRatCount randomGenome >>=
+scoreTrack :: SimulationOptions -> U2Graph FullCell -> Player -> Rand Int
+scoreTrack config track player = replicateM (initialRatCount config) randomGenome >>=
                           mapM createSpecimen >>=
-                          trackTurn gameTurns initialScore
+                          trackTurn (gameTurns config) (initialScore config)
     where
         createSpecimen :: Genome -> Rand Specimen
         createSpecimen genome = do Specimen genome 0 0 (player genome) <$> drawFromList startingCells
