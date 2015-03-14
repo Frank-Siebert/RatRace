@@ -123,6 +123,9 @@ options =
     , Option ['t'] ["turns"]
         (ReqArg (\x opts -> opts { gameTurns = read x }) "n")
         ("game turns (default: "++show (gameTurns defaultOptions)++")")
+    , Option [] ["flipchance","prob_mutation"]
+        (ReqArg (\x opts -> opts { genomeFlipChance = read x }) "x")
+        ("mutation probability (default: "++show (genomeFlipChance defaultOptions)++")")
     ]
 
 compilerOpts :: [String] -> SimulationOptions
@@ -160,20 +163,21 @@ scoreTrack config track player = replicateM (initialRatCount config) randomGenom
                           trackTurn (gameTurns config) (initialScore config)
     where
         createSpecimen :: Genome -> Rand Specimen
-        createSpecimen genome = do Specimen genome 0 0 (player genome) <$> drawFromList startingCells
+        createSpecimen genome = Specimen genome 0 0 (player genome) <$> drawFromList startingCells
+        flipChance = (genomeFlipChance config)
         startingCells = map _here2 $ admissibleStartingCells track
         trackTurn :: Int -> Int -> [Specimen] -> Rand Int
-        trackTurn _  (-1) _        = return (-1) -- cannot happen, but makes score strict
-        trackTurn 0 score rats     = return score
-        trackTurn _ score       [] = return score
-        trackTurn _ score rats@[_] = return score
+        trackTurn _           (-1)    _ = return (-1) -- cannot happen, but makes score strict
+        trackTurn 0          score rats = return score
+        trackTurn _          score   [] = return score
+        trackTurn _          score  [_] = return score
         trackTurn roundsLeft score rats = do
             let youngRats = filter ((<100) . age) rats
             movedRats <- catMaybes <$> mapM moveSpecimen youngRats
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
             let currentRats = map fst $ scoredRats
-            children <- (breed currentRats >>= mapM mutateGenome >>= mapM createSpecimen)
+            children <- (breed currentRats >>= mapM (mutateGenome flipChance) >>= mapM createSpecimen)
             trackTurn (roundsLeft - 1) (score + turnScore) (children ++ currentRats)
         moveSpecimen :: Specimen -> Rand (Maybe Specimen)
         moveSpecimen rat =
@@ -195,7 +199,7 @@ moveRat g rat = let cell = ratCell rat
 
 fitnessScore :: Specimen -> Int
 fitnessScore rat = 1 + completedRuns rat * 50 + fst (position $ ratCell rat)
--- need admissibleStartingCells, so maybe just return genome?
+
 -- | only the children, the incoming list is not returned
 breed :: [Specimen] -> Rand [Genome]
 breed  [] = return []

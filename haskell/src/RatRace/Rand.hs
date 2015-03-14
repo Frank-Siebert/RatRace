@@ -40,17 +40,19 @@ mixGenome mother father = do coin <- getRandom
                                    then (mother,father)
                                    else (father,mother))
                           where
+                             changeChance = genomeChangeChance defaultOptions
                              mix ([],recessive) = return recessive
                              mix (d:ominant,_:recessive) = (d:) <$>
                                      do x <- getRandom
-                                        mix (if (x < genomeChangeChance defaultOptions)
+                                        mix (if (x < changeChance)
                                                then (recessive,ominant)
                                                else (ominant,recessive))
 
-mutateGenome :: Genome -> Rand Genome
-mutateGenome [] = return []
-mutateGenome (g:gs) = do c <- getRandom
-                         ((if c < genomeFlipChance defaultOptions then not g else g):) <$>  mutateGenome gs
+mutateGenome :: Double -> Genome -> Rand Genome
+mutateGenome _ []              = return []
+mutateGenome flipChance (g:gs) =
+    do c <- getRandom
+       ((if c < flipChance then not g else g):) <$>  mutateGenome flipChance gs
 
 addPos :: [[a]] -> [[(Position,a)]]
 addPos = zipWith (\x -> map (\(y,a)->((x,y),a))) [0..] . map (zip [0..])
