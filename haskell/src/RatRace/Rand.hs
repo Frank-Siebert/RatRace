@@ -34,19 +34,19 @@ getStdGen = do (g,h) <- (split <$> get)
                put g
                return h
 
-mixGenome :: Genome -> Genome -> Rand Genome
-mixGenome mother father = do coin <- getRandom
-                             mix (if coin
-                                   then (mother,father)
-                                   else (father,mother))
-                          where
-                             changeChance = genomeChangeChance defaultOptions
-                             mix ([],recessive) = return recessive
-                             mix (d:ominant,_:recessive) = (d:) <$>
-                                     do x <- getRandom
-                                        mix (if (x < changeChance)
-                                               then (recessive,ominant)
-                                               else (ominant,recessive))
+mixGenome :: Double -> Genome -> Genome -> Rand Genome
+mixGenome changeChance mother father =
+      do coin <- getRandom
+         mix (if coin
+               then (mother,father)
+               else (father,mother))
+      where
+         mix ([],recessive) = return recessive
+         mix (d:ominant,_:recessive) = (d:) <$>
+                 do x <- getRandom
+                    mix (if (x < changeChance)
+                           then (recessive,ominant)
+                           else (ominant,recessive))
 
 mutateGenome :: Double -> Genome -> Rand Genome
 mutateGenome flipChance = mapM (\x ->

@@ -13,13 +13,13 @@ import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList,delete)
 import Debug.Trace
-import System.Console.GetOpt
 import System.Environment (getArgs)
 import System.Random (newStdGen, StdGen)
 
+import RatRace.Options
+import RatRace.Rand
 import RatRace.Types
 import RatRace.Util
-import RatRace.Rand
 
 ----- below here controller only
 
@@ -115,25 +115,6 @@ createRaceTrack :: Int -> Int -> Rand (U2Graph FullCell)
 createRaceTrack l w = buildFullCell <$> generateCells <*> generateRaceTrack l w
 --createRaceTrack = buildFullCell <$> pure (replicate 16 (Teleporter 0 0)) <*> generateRaceTrack
 
-options :: [OptDescr (SimulationOptions -> SimulationOptions)]
-options =
-    [ Option ['g','r']     ["games","rounds"]
-        (ReqArg (\x opts -> opts { rounds = read x }) "n")
-        ("rounds (default: "++show (rounds defaultOptions)++")")
-    , Option ['t'] ["turns"]
-        (ReqArg (\x opts -> opts { gameTurns = read x }) "n")
-        ("game turns (default: "++show (gameTurns defaultOptions)++")")
-    , Option [] ["flipchance","prob_mutation"]
-        (ReqArg (\x opts -> opts { genomeFlipChance = read x }) "x")
-        ("mutation probability (default: "++show (genomeFlipChance defaultOptions)++")")
-    ]
-
-compilerOpts :: [String] -> SimulationOptions
-compilerOpts argv =
-    case getOpt Permute options argv of
-         (o,_,[]  ) -> foldl (flip id) defaultOptions o
-         (_,_,errs) -> error (concat errs ++ usageInfo "RatRace command line options" options)
-
 runContest :: [Player] -> IO ()
 runContest ps =
   do argv <- getArgs
@@ -177,7 +158,7 @@ scoreTrack config track player = replicateM (initialRatCount config) randomGenom
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
             let currentRats = map fst $ scoredRats
-            children <- (breed currentRats >>= mapM (mutateGenome flipChance) >>= mapM createSpecimen)
+            children <- (breed (genomeChangeChance config) currentRats >>= mapM (mutateGenome flipChance) >>= mapM createSpecimen)
             trackTurn (roundsLeft - 1) (score + turnScore) (children ++ currentRats)
         moveSpecimen :: Specimen -> Rand (Maybe Specimen)
         moveSpecimen rat =
@@ -200,11 +181,11 @@ moveRat g rat = let cell = ratCell rat
 fitnessScore :: Specimen -> Int
 fitnessScore rat = 1 + completedRuns rat * 50 + fst (position $ ratCell rat)
 
--- | only the children, the incoming list is not returned
-breed :: [Specimen] -> Rand [Genome]
-breed  [] = return []
-breed [_] = return []
-breed parents = let total = (sum $ map  fitnessScore parents) - 1
+-- | genomeFlipChance, parents; return bred genomes without including parents
+breed :: Double -> [Specimen] -> Rand [Genome]
+breed _  [] = return []
+breed _ [_] = return []
+breed c parents = let total = (sum $ map  fitnessScore parents) - 1
                  in replicateM 10 $ do
                         motherFitness <- getRandomR (0, total)
                         let (mother, partial) = drawRat parents motherFitness
@@ -212,7 +193,7 @@ breed parents = let total = (sum $ map  fitnessScore parents) - 1
                         fatherFitness <- getRandomR (0, total')
                         let fatherFitness' = if fatherFitness >=partial then fatherFitness + fitnessScore mother else fatherFitness
                         let (father, _) = drawRat parents fatherFitness
-                        mixGenome (genome mother) (genome father)
+                        mixGenome c (genome mother) (genome father)
 
 drawRat :: [Specimen] -> Int -> (Specimen,Int)
 drawRat = go 0 where
