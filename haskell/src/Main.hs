@@ -11,8 +11,8 @@ import Data.Ord (comparing)
 
 
 main :: IO ()
---main = runContest [myPlayer,colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, blind West]
-main = runContest [myPlayer]
+main = runContest [myPlayer, colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, colorScoringPlayer' unaryScoring, colorScoringPlayer' binaryScoring, blind West]
+--main = runContest [myPlayer]
 
 square :: U2 Char
 square = fromListU2 ["abc","def","ghi"]
@@ -42,6 +42,14 @@ colorScoringPlayer :: Scoring -> Player
 colorScoringPlayer scoring genome =
     let scores :: [Int]
         scores = map scoring . transpose . chunksOf 16 . take 96 $ genome
+        score (-1) = -99
+        score   x  = scores !! x
+     in \g v -> fst . maximumBy (comparing snd ) . map (\x -> (x, score $ view x v)) $ forward
+
+colorScoringPlayer' :: Scoring -> Player
+colorScoringPlayer' scoring genome =
+    let scores :: [Int]
+        scores = map scoring . chunksOf 6 . take 96 $ genome
         score (-1) = -99
         score   x  = scores !! x
      in \g v -> fst . maximumBy (comparing snd ) . map (\x -> (x, score $ view x v)) $ forward
