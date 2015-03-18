@@ -2,7 +2,7 @@ import RatRace.RatRace
 
 import System.Random
 import Control.Comonad
-import Data.List (maximumBy,transpose)
+import Data.List (foldl',maximumBy,transpose)
 import Data.List.Split (chunksOf)
 import Data.Ord (comparing)
 
@@ -27,10 +27,7 @@ unaryScoring = length . filter id
 
 {-# INLINE binaryScoring #-}
 binaryScoring :: Scoring
-binaryScoring = go 0 where
-                go (-9) [] = 0 -- strictness
-                go acc [] = acc
-                go acc (x:xs) = go (fromEnum x + 2*acc) xs
+binaryScoring = foldl' (\x y -> 2*x + fromEnum y) 0
 
 colorScoringPlayer :: Scoring -> Player
 colorScoringPlayer scoring genome =
