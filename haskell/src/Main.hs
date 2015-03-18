@@ -1,9 +1,6 @@
 import RatRace.RatRace
 
-import RatRace.Util -- for square, remove, RatRace.RatRace import should be enough
-import RatRace.Types
 import System.Random
-import RatRace.Controller
 import Control.Comonad
 import Data.List (maximumBy,transpose)
 import Data.List.Split (chunksOf)
@@ -13,9 +10,6 @@ import Data.Ord (comparing)
 main :: IO ()
 main = runContest [myPlayer, colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, colorScoringPlayer' unaryScoring, colorScoringPlayer' binaryScoring, blind West]
 --main = runContest [myPlayer]
-
-square :: U2 Char
-square = fromListU2 ["abc","def","ghi"]
 
 single = U2 (U [] (U "" 'X' "") [])
 

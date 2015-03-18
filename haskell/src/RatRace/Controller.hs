@@ -31,22 +31,8 @@ data FullCell = FullCell {
    move     :: Move -> Maybe FullCell
 }
 
-iter :: (Monad m) => Int -> (a -> m a) -> (a -> m a) -> a -> m a
-iter n f g | n > 0     = g >=> iter (n-1) f g
-           | n < 0     = f >=> iter (n-1) f g
-           | otherwise = return
-
 moveFocus :: Position -> U2Graph a -> Maybe (U2Graph a)
 moveFocus (x,y) = iter x _left2 _right2 >=> iter y _down2 _up2
-
-visionU2 :: Position -> U2 a -> Maybe (U2 a)
-visionU2 (x,y) u = ((iter x leftU2 rightU2 =<< iter y downU2 upU2 u))
-
-visionAt :: Position -> Vision -> Int
-visionAt (x,y) = maybe (-1) extract . visionU2 (x,y)
-
-view :: Move -> Vision -> Int
-view dir = visionAt (getOffset dir)
 
 buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where

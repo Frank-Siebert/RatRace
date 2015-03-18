@@ -65,6 +65,11 @@ generateColor = getRandomR (0,15)
 drawFromList :: [a] -> Rand a
 drawFromList xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
+-- technically, Empty == Teleporter 0 0
+data Cell = Wall | Teleporter Int Int | Trap Int Int deriving (Eq,Show)
+emptyCell :: Cell
+emptyCell = Teleporter 0 0
+
 generateCells :: Rand [Cell]
 generateCells = do te1 <- genCell Teleporter 4
                    te2 <- genCell Teleporter 4

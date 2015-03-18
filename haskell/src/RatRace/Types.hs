@@ -2,6 +2,7 @@
 module RatRace.Types where
 
 import Control.Comonad
+import Control.Monad ((>=>))
 import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
@@ -37,6 +38,15 @@ leftU :: U a -> Maybe (U a)
 leftU (U [] _ _) = Nothing
 leftU (U (l:ls) x rs) = Just (U ls l (x:rs))
 
+rightU2, leftU2, upU2, downU2 :: U2 a -> Maybe (U2 a)
+rightU2 (U2 u) = fmap U2 . rightU $ u
+leftU2  (U2 u) = fmap U2 .  leftU $ u
+upU2    (U2 u) = fmap U2 . fmap' rightU $ u
+downU2  (U2 u) = fmap U2 . fmap'  leftU $ u
+
+listU :: ([a] -> [a]) -> U a -> U a
+listU f (U ls x rs) = U (f ls) x (f rs)
+
 iterateMaybe :: (a -> Maybe a) -> a -> [a]
 iterateMaybe f z = case f z of
                 Nothing -> []
@@ -66,11 +76,19 @@ fmap' f (U ls x rs) = let z = f x in
      Nothing   -> Nothing
      (Just x') -> Just $ U (catMaybes (map f ls)) x' (catMaybes (map f rs))
 
-             
--- technically, Empty == Teleporter 0 0
-data Cell = Wall | Teleporter Int Int | Trap Int Int deriving (Eq,Show)
-emptyCell :: Cell
-emptyCell = Teleporter 0 0
-
 -- | here we mix position and offset
 type Position = (Int,Int)
+
+iter :: (Monad m) => Int -> (a -> m a) -> (a -> m a) -> a -> m a
+iter n f g | n > 0     = g >=> iter (n-1) f g
+           | n < 0     = f >=> iter (n-1) f g
+           | otherwise = return
+
+visionU2 :: Position -> U2 a -> Maybe (U2 a)
+visionU2 (x,y) u = ((iter x leftU2 rightU2 =<< iter y downU2 upU2 u))
+
+visionAt :: Position -> Vision -> Int
+visionAt (x,y) = maybe (-1) extract . visionU2 (x,y)
+
+view :: Move -> Vision -> Int
+view dir = visionAt (getOffset dir)

@@ -1,5 +1,6 @@
 module RatRace.RatRace (
-    runContest
+    runContest,
+    module RatRace.Types
 ) where
 
 

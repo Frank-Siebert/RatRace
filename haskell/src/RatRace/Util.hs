@@ -4,15 +4,6 @@ import Control.Comonad
 
 import RatRace.Types
 
-rightU2, leftU2, upU2, downU2 :: U2 a -> Maybe (U2 a)
-rightU2 (U2 u) = fmap U2 . rightU $ u
-leftU2  (U2 u) = fmap U2 .  leftU $ u
-upU2    (U2 u) = fmap U2 . fmap' rightU $ u
-downU2  (U2 u) = fmap U2 . fmap'  leftU $ u
-
-listU :: ([a] -> [a]) -> U a -> U a
-listU f (U ls x rs) = U (f ls) x (f rs)
-
 -- a real listU2 function would need higher rank:
 --(forall a.[a] -> [a]) -> U2 a -> U2 a
 takeU2 :: Int -> U2 a -> U2 a
