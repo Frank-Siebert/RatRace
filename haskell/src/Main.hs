@@ -38,7 +38,7 @@ colorScoringPlayer scoring genome =
         scores = map scoring . transpose . chunksOf 16 . take 96 $ genome
         score (-1) = -99
         score   x  = scores !! x
-     in \g v -> fst . maximumBy (comparing snd ) . map (\x -> (x, score $ view x v)) $ forward
+     in \g v -> takeOne g . map (\x -> (x, score $ view x v)) $ forward
 
 colorScoringPlayer' :: Scoring -> Player
 colorScoringPlayer' scoring genome =
@@ -46,7 +46,7 @@ colorScoringPlayer' scoring genome =
         scores = map scoring . chunksOf 6 . take 96 $ genome
         score (-1) = -99
         score   x  = scores !! x
-     in \g v -> fst . maximumBy (comparing snd ) . map (\x -> (x, score $ view x v)) $ forward
+     in \g v -> takeOne g . map (\x -> (x, score $ view x v)) $ forward
 
 data Trap = T {-# UNPACK #-} !Int {-# UNPACK #-} !Position
 mkTrap :: [Bool] -> Trap
@@ -67,4 +67,19 @@ myPlayer genome =
                     pulldown (T c p) u = case extract <$> visionU2 p u of
                        Just (_,c) -> (-50,c)
                        _          ->  extract u
-                 in fst . maximumBy (comparing snd ) . map (\x -> (x, 8* fst (getOffset x)+view x (fst <$> v'))) $ [North,NorthEast,East,SouthEast,South]
+                 in takeOne g . map (\x -> (x, 8* fst (getOffset x)+view x (fst <$> v'))) $ [North,NorthEast,East,SouthEast,South]
+
+takeOne :: StdGen -> [(Move,Int)] -> Move
+takeOne g = rnd . map fst . maximaBy (comparing snd) where
+    rnd :: [a] -> a
+    rnd [x] = x
+    rnd xs = xs !! fst (randomR (0, length xs - 1) g)
+
+maximaBy :: (a -> a -> Ordering) -> [a] -> [a]
+maximaBy _ [] = []
+maximaBy c (x:xs) = case maximaBy c xs of
+                        []       -> [x]
+                        ys@(y:_) -> case c x y of
+                                       EQ -> x:ys
+                                       LT -> ys
+                                       GT -> [x]
