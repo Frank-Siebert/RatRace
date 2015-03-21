@@ -6,27 +6,18 @@ import Control.Monad ((>=>))
 import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
-type Genome = [Bool]
-type Color = Int
+type Genome = [Bool]    -- ^ The genome is simply represented by a list of Bools
+type Color = Int        -- ^ Color representation
 
-type Vision = U2 Color
+type Vision = U2 Color  -- ^ The vision is given by a 2-dimensional comonad with the focus on the current cell.
 
-data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest deriving (Enum, Bounded)
+data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
+    deriving (Enum, Bounded) -- ^ players have to return one a Move
 
-getOffset :: Move -> Position
-getOffset StandStill = ( 0, 0)
-getOffset North      = ( 0, 1)
-getOffset NorthEast  = ( 1, 1)
-getOffset      East  = ( 1, 0)
-getOffset SouthEast  = ( 1,-1)
-getOffset South      = ( 0,-1)
-getOffset SouthWest  = (-1,-1)
-getOffset      West  = (-1, 0)
-getOffset NorthWest  = (-1, 1)
-
-type Player = Genome -> Run
+-- | The main type for contestants to implement
+type Player = Genome -> Run 
 type Run = (StdGen -> Vision -> Move)
--- TODO rename Run vs Move, something is fishy
+-- ^ with a definition like TODO the repeated pre-processing can be saved via partial application
 
 data U a = U [a] a [a] deriving (Show,Eq,Functor)
 
@@ -84,11 +75,26 @@ iter n f g | n > 0     = g >=> iter (n-1) f g
            | n < 0     = f >=> iter (n-1) f g
            | otherwise = return
 
+-- | turns a Move in the Position offset
+getOffset :: Move -> Position
+getOffset StandStill = ( 0, 0)
+getOffset North      = ( 0, 1)
+getOffset NorthEast  = ( 1, 1)
+getOffset      East  = ( 1, 0)
+getOffset SouthEast  = ( 1,-1)
+getOffset South      = ( 0,-1)
+getOffset SouthWest  = (-1,-1)
+getOffset      West  = (-1, 0)
+getOffset NorthWest  = (-1, 1)
+
+-- | Shifts the focus in direction of the Position offset, returns Nothing if moving out of bounds
 visionU2 :: Position -> U2 a -> Maybe (U2 a)
 visionU2 (x,y) u = ((iter x leftU2 rightU2 =<< iter y downU2 upU2 u))
 
+-- | extracts the color at the Position offset, returns -1 if out of bounds
 visionAt :: Position -> Vision -> Int
 visionAt (x,y) = maybe (-1) extract . visionU2 (x,y)
 
+-- | views in the direction of the Move
 view :: Move -> Vision -> Int
 view dir = visionAt (getOffset dir)
