@@ -87,12 +87,14 @@ admissibleStartingCells raceTrack = filter isAdmissibleStartingCell (raceTrack :
 
 -- | for a single
 isAdmissibleStartingCell :: U2Graph FullCell -> Bool
-isAdmissibleStartingCell track = maybe False ((<=100) . length) (
-                           aStar neighbors
-                                 (\_ _ -> 1)
-                                 (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
-                                 isGoal .
-                            _here2 $ track)
+isAdmissibleStartingCell = maybe False ((<=100) . length) . findGoalCell
+
+findGoalCell :: U2Graph FullCell -> Maybe [FullCell]
+findGoalCell = aStar neighbors
+                     (\_ _ -> 1)
+                     (\fc -> (fromInteger . toInteger) (abs (50 - fst (position fc))) / (4.0 :: Double))
+                     isGoal .
+                _here2
 
 isGoal :: FullCell -> Bool
 isGoal = (>=49) . fst . position
@@ -108,6 +110,7 @@ runContest ps =
          config = compilerOpts argv
      putStrLn $ "With options " ++ show config
      gs <- take (rounds config) . randomGens <$> newStdGen
+     forM_ gs (visualizeTrack config)
      let results :: [[Int]]
          results = parMap rdeepseq (runGame config ps) gs
      putStrLn $ "The players scored " ++ (unlines . map show $ results ) ++ "."
@@ -121,6 +124,21 @@ runGame :: SimulationOptions -> [Player] -> StdGen -> [Int]
 runGame config ps = evalState $
     do rt <- untilM checkRaceTrack (createRaceTrack (raceTrackLength config) (raceTrackWidth config))
        mapM (scoreTrack config rt) ps
+
+visualizeTrack :: SimulationOptions -> StdGen -> IO ()
+visualizeTrack config g = let
+        raceTrack = evalState (untilM checkRaceTrack (createRaceTrack (raceTrackLength config) (raceTrackWidth config))) g
+        paths = map (fmap length . findGoalCell) $ raceTrack : (iterateMaybe _up2 $ raceTrack)
+        startPos = reverse $ raceTrack : (iterateMaybe _up2 $ raceTrack)
+        line x = x : (iterateMaybe _right2 $ x)
+        showCell c = if cellType c == Wall then 'W' else if nextCell c == Nothing
+                       then 'o'
+                       else '.'
+        showLine x = putStrLn . map (showCell . _here2)  . line $ x
+    in do
+        putStrLn $ "Track " ++ show g
+        putStrLn $ "Paths " ++ show paths
+        forM_ startPos showLine
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: {-# UNPACK #-} !Int, age :: {-# UNPACK #-} !Int, run :: !Run, ratCell :: FullCell } --
 
