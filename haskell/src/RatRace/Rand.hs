@@ -30,9 +30,7 @@ getRandomR range = do (x,g) <- (randomR range <$> get)
                       x `seq` return x
 
 getStdGen :: Rand StdGen
-getStdGen = do (g,h) <- (split <$> get)
-               put g
-               return h
+getStdGen = state split
 
 mixGenome :: Double -> Genome -> Genome -> Rand Genome
 mixGenome changeChance mother father =
