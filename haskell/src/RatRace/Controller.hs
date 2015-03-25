@@ -131,7 +131,7 @@ visualizeTrack config g = let
         paths = map (fmap length . findGoalCell) $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         startPos = reverse $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         line x = x : (iterateMaybe _right2 $ x)
-        showCell c = case cellType c of
+        showCell 0 c = case cellType c of
                        Wall                      -> 'W'
                        _ | nextCell c == Nothing -> 'o'
                        Teleporter x y
@@ -140,11 +140,19 @@ visualizeTrack config g = let
                          | y < 0 -> '^'
                          | y > 0 -> 'v'
                        _ -> '.'
-        showLine x = putStrLn . map (showCell . _here2)  . line $ x
+        showCell 1 c = let col = extract . vision $ c in toEnum (col + if col < 10 then 48 else 87)
+        showCell 2 c = case cellType c of
+            Teleporter 0 0 -> '.'
+            Teleporter _ _ -> 'T'
+            Trap       _ _ -> 'X'
+            Wall           -> 'W'
+        showLine mode x = putStrLn . map (showCell mode . _here2)  . line $ x
     in do
         putStrLn $ "Track " ++ show g
         putStrLn $ "Paths " ++ show paths
-        forM_ startPos showLine
+        forM_ startPos (showLine 0)
+        forM_ startPos (showLine 1)
+        forM_ startPos (showLine 2)
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: {-# UNPACK #-} !Int, age :: {-# UNPACK #-} !Int, run :: !Run, ratCell :: FullCell } --
 
