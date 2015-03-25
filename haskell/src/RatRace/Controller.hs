@@ -26,15 +26,15 @@ import RatRace.Util
 data FullCell = FullCell {
    vision   :: U2 Color,
    nextCell :: Maybe FullCell, -- Nothing means specimen dies
-   position :: Position,
+   position :: Offset,
    cellType :: Cell,
    move     :: Move -> Maybe FullCell
 }
 
-moveFocus :: Position -> U2Graph a -> Maybe (U2Graph a)
+moveFocus :: Offset -> U2Graph a -> Maybe (U2Graph a)
 moveFocus (x,y) = iter x _left2 _right2 >=> iter y _down2 _up2
 
-buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
+buildFullCell :: [Cell] -> U2 (Offset,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where
     b this u = FullCell {
         vision   = snd <$> (takeU2 2 u),

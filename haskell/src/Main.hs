@@ -45,7 +45,7 @@ colorScoringPlayer' scoring genome =
         score   x  = scores !! x
      in \g v -> takeOne g . map (\x -> (x, score $ view x v)) $ forward
 
-data Trap = T {-# UNPACK #-} !Int {-# UNPACK #-} !Position
+data Trap = T {-# UNPACK #-} !Int {-# UNPACK #-} !Offset
 mkTrap :: [Bool] -> Trap
 mkTrap genome = T (binaryScoring . take 4 $ genome) (toOffset . drop 4 $ genome,toOffset . drop 8 $ genome) where
     toOffset g = let n = binaryScoring (take 4 g)

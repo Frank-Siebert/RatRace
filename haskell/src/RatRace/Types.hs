@@ -73,9 +73,9 @@ fmap' f (U ls x rs) =
      (Just x') -> Just $ U (catMaybes (map f ls)) x' (catMaybes (map f rs))
 
 -- | here we mix position and offset
-type Position = (Int,Int)
+type Offset = (Int,Int)
 
-addOffsets :: U2 a -> U2 (Position,a)
+addOffsets :: U2 a -> U2 (Offset,a)
 addOffsets (U2 (U ls m rs)) = U2 (U (zipWith f ls [-1,-2..]) (f m 0) (zipWith f rs [1..])) where
     f :: U a -> Int -> U ((Int,Int),a)
     f (U ds x us) z = U (zipWith g ds [-1,-2..]) ((z,0),x) (zipWith g us [1..]) where
@@ -86,8 +86,8 @@ iter n f g | n > 0     = g >=> iter (n-1) f g
            | n < 0     = f >=> iter (n-1) f g
            | otherwise = return
 
--- | turns a Move in the Position offset
-getOffset :: Move -> Position
+-- | turns a Move in the Offset offset
+getOffset :: Move -> Offset
 getOffset StandStill = ( 0, 0)
 getOffset North      = ( 0, 1)
 getOffset NorthEast  = ( 1, 1)
@@ -98,12 +98,12 @@ getOffset SouthWest  = (-1,-1)
 getOffset      West  = (-1, 0)
 getOffset NorthWest  = (-1, 1)
 
--- | Shifts the focus in direction of the Position offset, returns Nothing if moving out of bounds
-visionU2 :: Position -> U2 a -> Maybe (U2 a)
+-- | Shifts the focus in direction of the given offset, returns Nothing if moving out of bounds
+visionU2 :: Offset -> U2 a -> Maybe (U2 a)
 visionU2 (x,y) u = ((iter x leftU2 rightU2 =<< iter y downU2 upU2 u))
 
--- | extracts the color at the Position offset, returns -1 if out of bounds
-visionAt :: Position -> Vision -> Int
+-- | extracts the color at the given offset, returns -1 if out of bounds
+visionAt :: Offset -> Vision -> Int
 visionAt (x,y) = maybe (-1) extract . visionU2 (x,y)
 
 -- | views in the direction of the Move
