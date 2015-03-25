@@ -131,9 +131,15 @@ visualizeTrack config g = let
         paths = map (fmap length . findGoalCell) $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         startPos = reverse $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         line x = x : (iterateMaybe _right2 $ x)
-        showCell c = if cellType c == Wall then 'W' else if nextCell c == Nothing
-                       then 'o'
-                       else '.'
+        showCell c = case cellType c of
+                       Wall                      -> 'W'
+                       _ | nextCell c == Nothing -> 'o'
+                       Teleporter x y
+                         | x > 0 &&   x  >= abs y -> '>'
+                         | x < 0 && (-x) >= abs y -> '<'
+                         | y < 0 -> '^'
+                         | y > 0 -> 'v'
+                       _ -> '.'
         showLine x = putStrLn . map (showCell . _here2)  . line $ x
     in do
         putStrLn $ "Track " ++ show g
