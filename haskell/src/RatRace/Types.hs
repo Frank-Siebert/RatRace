@@ -83,7 +83,7 @@ addOffsets (U2 (U ls m rs)) = U2 (U (zipWith f ls [-1,-2..]) (f m 0) (zipWith f 
 
 iter :: (Monad m) => Int -> (a -> m a) -> (a -> m a) -> a -> m a
 iter n f g | n > 0     = g >=> iter (n-1) f g
-           | n < 0     = f >=> iter (n-1) f g
+           | n < 0     = f >=> iter (n+1) f g
            | otherwise = return
 
 -- | turns a Move in the Offset offset
