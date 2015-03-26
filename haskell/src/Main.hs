@@ -8,8 +8,8 @@ import Data.Ord (comparing)
 
 
 main :: IO ()
---main = runContest [myPlayer,myPlayer', colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, colorScoringPlayer' unaryScoring, colorScoringPlayer' binaryScoring, blind West]
-main = runContest [myPlayer,myPlayer', colorScoringPlayer binaryScoring, colorScoringPlayer' binaryScoring]
+--main = runContest [myPlayer, colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, colorScoringPlayer' unaryScoring, colorScoringPlayer' binaryScoring, blind West]
+main = runContest [myPlayer, colorScoringPlayer binaryScoring, colorScoringPlayer' binaryScoring]
 
 single = U2 (U [] (U "" 'X' "") [])
 
@@ -65,21 +65,6 @@ myPlayer genome =
                        Just (_,c) -> (-50,c)
                        _          ->  extract u
                  in takeOne g . map (\x -> (x, 8* fst (getOffset x)+view x (fst <$> v'))) $ [North,NorthEast,East,SouthEast,South]
-
-myPlayer' :: Player
-myPlayer' genome =
-    let scores :: [Int]
-        scores = map binaryScoring . chunksOf 4 . take 64 $ genome
-        score (-1) = -99
-        score   x  = scores !! x
-        trap1      = mkTrap (drop 64 genome)
-        trap2      = mkTrap (drop 86 genome)
-     in \g v -> let v'    = ((\x -> (score x,x)) <$> v) =>> pulldown trap1 =>> pulldown trap2
-                    pulldown :: Trap -> (U2 (Int,Int)) -> (Int,Int)
-                    pulldown (T c p) u = case extract <$> visionU2 p u of
-                       Just (_,c) -> (-50,c)
-                       _          ->  extract u
-                 in takeOne g . map (\x -> (x, (-8)* fst (getOffset x)+view x (fst <$> v'))) $ [North,NorthEast,East,SouthEast,South]
 
 takeOne :: StdGen -> [(Move,Int)] -> Move
 takeOne g = rnd . map fst . maximaBy (comparing snd) where
