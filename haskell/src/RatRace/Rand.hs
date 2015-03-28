@@ -24,11 +24,13 @@ getRandom = do (x,g) <- (random <$> get)
                g `seq` put g
                x `seq` return x
 
+{-# SPECIALIZE getRandomR :: (Int,Int) -> Rand Int #-}
 getRandomR :: (Random a) => (a,a) -> Rand a
 getRandomR range = do (x,g) <- (randomR range <$> get)
                       g `seq` put g
                       x `seq` return x
 
+{-# INLINE getStdGen #-}
 getStdGen :: Rand StdGen
 getStdGen = state split
 

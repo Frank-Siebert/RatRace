@@ -11,8 +11,9 @@ type Color = Int        -- ^ Color representation
 
 type Vision = U2 Color  -- ^ The vision is given by a 2-dimensional comonad with the focus on the current cell.
 
+-- | players have to return a Move
 data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
-    deriving (Enum, Bounded) -- ^ players have to return one a Move
+    deriving (Enum, Bounded)
 
 -- | The main type for contestants to implement
 type Player = Genome -> Run 

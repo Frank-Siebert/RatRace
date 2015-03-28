@@ -10,6 +10,7 @@ data SimulationOptions = SimulationOptions {
     genomeLength       :: Int,
     genomeChangeChance :: Double,
     genomeFlipChance   :: Double,
+    maxAge             :: Int,
     gameTurns          :: Int,
     initialScore       :: Int
 } deriving (Show)
@@ -22,6 +23,7 @@ defaultOptions = SimulationOptions {
     genomeLength       = 100,
     genomeChangeChance = 0.05,
     genomeFlipChance   = 0.01,
+    maxAge             = 100,
     gameTurns          = 10000,
     initialScore       = 1
 }
@@ -40,6 +42,9 @@ options =
     , Option [] ["xover","prob_crossover"]
         (ReqArg (\x opts -> opts { genomeChangeChance = read x }) "x")
         ("mutation crossover (default: "++show (genomeChangeChance defaultOptions)++")")
+    , Option [] ["maxage"]
+        (ReqArg (\x opts -> opts { maxAge = read x }) "n")
+        ("maximum age (default: "++show (maxAge defaultOptions)++")") 
     ]
 
 compilerOpts :: [String] -> SimulationOptions

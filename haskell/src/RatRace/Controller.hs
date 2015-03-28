@@ -79,15 +79,15 @@ instance Show FullCell where
 neighbors :: FullCell -> Set.Set FullCell
 neighbors c = Set.delete c . Set.fromList . catMaybes . map (move c) $ [North .. NorthWest]
 
-checkRaceTrack :: U2Graph FullCell -> Bool
-checkRaceTrack = (>=10) . length . admissibleStartingCells
+checkRaceTrack :: Int -> U2Graph FullCell -> Bool
+checkRaceTrack x = (>=10) . length . admissibleStartingCells x
 
-admissibleStartingCells :: U2Graph FullCell -> [U2Graph FullCell]
-admissibleStartingCells raceTrack = filter isAdmissibleStartingCell (raceTrack : (iterateMaybe _up2 $ raceTrack))
+admissibleStartingCells :: Int -> U2Graph FullCell -> [U2Graph FullCell]
+admissibleStartingCells x raceTrack = filter (isAdmissibleStartingCell x) (raceTrack : (iterateMaybe _up2 $ raceTrack))
 
--- | for a single
-isAdmissibleStartingCell :: U2Graph FullCell -> Bool
-isAdmissibleStartingCell = maybe False ((<=100) . length) . findGoalCell
+-- | for the focused cell
+isAdmissibleStartingCell :: Int -> U2Graph FullCell -> Bool
+isAdmissibleStartingCell x = maybe False ((<=x) . length) . findGoalCell
 
 findGoalCell :: U2Graph FullCell -> Maybe [FullCell]
 findGoalCell = aStar neighbors
@@ -122,12 +122,12 @@ geometricMean xs = exp . (/ (fromInteger . toInteger . length) xs) . sum . map (
 
 runGame :: SimulationOptions -> [Player] -> StdGen -> [Int]
 runGame config ps = evalState $
-    do rt <- untilM checkRaceTrack (createRaceTrack (raceTrackLength config) (raceTrackWidth config))
+    do rt <- untilM (checkRaceTrack (maxAge config)) (createRaceTrack (raceTrackLength config) (raceTrackWidth config))
        mapM (scoreTrack config rt) ps
 
 visualizeTrack :: SimulationOptions -> StdGen -> IO ()
 visualizeTrack config g = let
-        raceTrack = evalState (untilM checkRaceTrack (createRaceTrack (raceTrackLength config) (raceTrackWidth config))) g
+        raceTrack = evalState (untilM (checkRaceTrack (maxAge config)) (createRaceTrack (raceTrackLength config) (raceTrackWidth config))) g
         paths = map (fmap length . findGoalCell) $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         startPos = reverse $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         line x = x : (iterateMaybe _right2 $ x)
@@ -164,14 +164,14 @@ scoreTrack config track player = replicateM (initialRatCount config) randomGenom
         createSpecimen :: Genome -> Rand Specimen
         createSpecimen genome = Specimen genome 0 0 (player genome) <$> drawFromList startingCells
         flipChance = (genomeFlipChance config)
-        startingCells = map _here2 $ admissibleStartingCells track
+        startingCells = map _here2 $ admissibleStartingCells (maxAge config) track
         trackTurn :: Int -> Int -> [Specimen] -> Rand Int
         trackTurn _           (-1)    _ = return (-1) -- cannot happen, but makes score strict
         trackTurn 0          score rats = return score
         trackTurn _          score   [] = return score
         trackTurn _          score  [_] = return score
         trackTurn roundsLeft score rats = do
-            let youngRats = filter ((<100) . age) rats
+            let youngRats = filter ((<maxAge config) . age) rats
             movedRats <- catMaybes <$> mapM moveSpecimen youngRats
             scoredRats <- mapM resetScorer movedRats
             let turnScore = sum . map snd $ scoredRats
