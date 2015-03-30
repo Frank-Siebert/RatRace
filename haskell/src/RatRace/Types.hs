@@ -6,10 +6,13 @@ import Control.Monad ((>=>))
 import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
-type Genome = [Bool]    -- ^ The genome is simply represented by a list of Bools
-type Color = Int        -- ^ Color representation
+type Genome = [Bool]
+-- ^ The genome is simply represented by a list of Bools
+type Color = Int
+-- ^ Color representation
 
-type Vision = U2 Color  -- ^ The vision is given by a 2-dimensional comonad with the focus on the current cell.
+type Vision = U2 Color
+-- ^ The vision is given by a 2-dimensional comonad with the focus on the current cell.
 
 -- | players have to return a Move
 data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
