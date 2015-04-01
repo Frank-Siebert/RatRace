@@ -62,8 +62,8 @@ myPlayer genome =
      in \g v -> let v'    = ((\x -> (score x,x)) <$> v) =>> pulldown trap1 =>> pulldown trap2
                     pulldown :: Trap -> (U2 (Int,Int)) -> (Int,Int)
                     pulldown (T c p) u = case extract <$> visionU2 p u of
-                       Just (_,c) -> (-50,c)
-                       _          ->  extract u
+                       Just (_,c') | c==c' -> (-50,c)
+                       _                   ->  extract u
                  in takeOne g . map (\x -> (x, 8* fst (getOffset x)+view x (fst <$> v'))) $ [North,NorthEast,East,SouthEast,South]
 
 takeOne :: StdGen -> [(Move,Int)] -> Move
