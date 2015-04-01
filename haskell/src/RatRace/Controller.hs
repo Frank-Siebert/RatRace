@@ -210,7 +210,7 @@ breed c parents = let total = (sum $ map  fitnessScore parents) - 1
                             total' = total - fitnessScore mother
                         fatherFitness <- getRandomR (0, total')
                         let fatherFitness' = if fatherFitness >=partial then fatherFitness + fitnessScore mother else fatherFitness
-                        let (father, _) = drawRat parents fatherFitness
+                        let (father, _) = drawRat parents fatherFitness'
                         mixGenome c (genome mother) (genome father)
 
 drawRat :: [Specimen] -> Int -> (Specimen,Int)
