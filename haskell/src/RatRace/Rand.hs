@@ -38,7 +38,7 @@ getStdGen = state split
 mixGenome :: Double -> Genome -> Genome -> Rand Genome
 mixGenome changeChance mother father =
       do coin <- getRandom
-         flips <- map (<=changeChance) <$> replicateM 99 (getRandomR (0,1))
+         flips <- map (<=changeChance) <$> replicateM 99 getRandom
          let idxs :: [Bool]
              idxs = scanl (/=) coin flips
              d = V.fromList idxs
