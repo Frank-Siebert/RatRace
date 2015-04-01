@@ -3,10 +3,11 @@ module RatRace.Types where
 
 import Control.Comonad
 import Control.Monad ((>=>))
+import qualified Data.Vector.Unboxed as V
 import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
-type Genome = [Bool]
+type Genome = V.Vector Bool
 -- ^ The genome is simply represented by a list of Bools
 type Color = Int
 -- ^ Color representation

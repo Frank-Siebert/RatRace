@@ -5,6 +5,7 @@ module RatRace.Rand (
 
 import Control.Applicative
 import Control.Monad.State.Strict
+import qualified Data.Vector.Unboxed as V
 import System.Random
 
 import RatRace.Types
@@ -16,7 +17,7 @@ randomGens :: StdGen -> [StdGen]
 randomGens g = let (a,b) = split g in a : randomGens b
 
 randomGenome :: Rand Genome
-randomGenome = replicateM 100 getRandom
+randomGenome = V.replicateM 100 getRandom
 
 {-# INLINE getRandom #-}
 getRandom :: (Random a) => Rand a
@@ -37,20 +38,24 @@ getStdGen = state split
 mixGenome :: Double -> Genome -> Genome -> Rand Genome
 mixGenome changeChance mother father =
       do coin <- getRandom
-         mix (if coin
-               then (mother,father)
-               else (father,mother))
+         V.fromList <$> mix (if coin
+                                then (mother,father)
+                                else (father,mother))
       where
-         mix (x@[d],_) = return x
-         mix (d:ominant,_:recessive) = (d:) <$>
+         mix (a,b) =
+          let d = V.head a
+              ominant = V.tail a
+              recessive = V.tail b
+            in if V.null a || V.null b
+                then return []
+                else (d:) <$>
                  do x <- getRandom
                     mix (if (x < changeChance)
                            then (recessive,ominant)
                            else (ominant,recessive))
-         mix (_,_) = return []
 
 mutateGenome :: Double -> Genome -> Rand Genome
-mutateGenome flipChance = mapM (\x ->
+mutateGenome flipChance = V.mapM (\x ->
     (do c <- getRandom
         return $ if c > flipChance then x else not x))
 

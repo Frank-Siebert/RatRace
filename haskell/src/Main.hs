@@ -6,6 +6,8 @@ import Control.Comonad
 import Data.List (foldl',maximumBy,transpose)
 import Data.List.Split (chunksOf)
 import Data.Ord (comparing)
+import qualified Data.Vector.Unboxed as V
+import Data.Vector.Unboxed ((!))
 
 
 main :: IO ()
@@ -32,7 +34,7 @@ binaryScoring = foldl' (\x y -> 2*x + fromEnum y) 0
 colorScoringPlayer :: Scoring -> Player
 colorScoringPlayer scoring genome =
     let scores :: [Int]
-        scores = map scoring . transpose . chunksOf 16 . take 96 $ genome
+        scores = map scoring . transpose . chunksOf 16 . V.toList . V.take 96 $ genome
         score (-1) = -99
         score   x  = scores !! x
      in \g v -> takeOne g . map (\x -> (x, score $ view x v)) $ forward
@@ -40,7 +42,7 @@ colorScoringPlayer scoring genome =
 colorScoringPlayer' :: Scoring -> Player
 colorScoringPlayer' scoring genome =
     let scores :: [Int]
-        scores = map scoring . chunksOf 6 . take 96 $ genome
+        scores = map scoring . chunksOf 6 . V.toList . V.take 96 $ genome
         score (-1) = -99
         score   x  = scores !! x
      in \g v -> takeOne g . map (\x -> (x, score $ view x v)) $ forward
@@ -54,11 +56,11 @@ mkTrap genome = T (binaryScoring . take 4 $ genome) (toOffset . drop 4 $ genome,
 myPlayer :: Player
 myPlayer genome =
     let scores :: [Int]
-        scores = map binaryScoring . chunksOf 4 . take 64 $ genome
+        scores = map binaryScoring . chunksOf 4 . V.toList . V.take 64 $ genome
         score (-1) = -99
         score   x  = scores !! x
-        trap1      = mkTrap (drop 64 genome)
-        trap2      = mkTrap (drop 86 genome)
+        trap1      = mkTrap (V.toList $ V.drop 64 genome)
+        trap2      = mkTrap (V.toList $ V.drop 86 genome)
      in \g v -> let v'    = ((\x -> (score x,x)) <$> v) =>> pulldown trap1 =>> pulldown trap2
                     pulldown :: Trap -> (U2 (Int,Int)) -> (Int,Int)
                     pulldown (T c p) u = case extract <$> visionU2 p u of
@@ -84,10 +86,10 @@ maximaBy c (x:xs) = case maximaBy c xs of
 myPlayer2 :: (Int -> Int -> Int) -> Player
 myPlayer2 (#) genome =
     let scores :: [Int]
-        scores = map binaryScoring . chunksOf 5 $ genome
+        scores = map binaryScoring . chunksOf 5 . V.toList $ genome
         score (-1) = -99
         score   x  = scores !! x
      in \_ v -> let ls = concat . listFromU2 $ v
                     hash = foldl' (\a b -> (a*3 + b) # 20) 0 ls
-                    xward = if genome !! (80 + hash) then forward else forward'
+                    xward = if genome ! (80 + hash) then forward else forward'
                  in fst . head . maximaBy (comparing snd) . map (\x -> (x, score $ view x v)) $ xward
