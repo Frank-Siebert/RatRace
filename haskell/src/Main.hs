@@ -12,12 +12,10 @@ main :: IO ()
 --main = runContest [myPlayer, colorScoringPlayer unaryScoring, colorScoringPlayer binaryScoring, colorScoringPlayer' unaryScoring, colorScoringPlayer' binaryScoring, blind West]
 main = runContest [myPlayer2 quot, myPlayer2 rem, myPlayer, colorScoringPlayer binaryScoring, colorScoringPlayer' binaryScoring]
 
-single = U2 (U [] (U "" 'X' "") [])
-
 blind :: Move -> Player
-blind x genome = \_ _ -> x
+blind x _ = \_ _ -> x
 
-
+forward, forward' :: [Move]
 forward = [NorthEast,East,SouthEast]
 forward' = reverse forward
 
@@ -83,12 +81,13 @@ maximaBy c (x:xs) = case maximaBy c xs of
                                        LT -> ys
                                        GT -> [x]
 
+myPlayer2 :: (Int -> Int -> Int) -> Player
 myPlayer2 (#) genome =
     let scores :: [Int]
         scores = map binaryScoring . chunksOf 5 $ genome
         score (-1) = -99
         score   x  = scores !! x
-     in \g v -> let ls = concat . listFromU2 $ v
+     in \_ v -> let ls = concat . listFromU2 $ v
                     hash = foldl' (\a b -> (a*3 + b) # 20) 0 ls
                     xward = if genome !! (80 + hash) then forward else forward'
                  in fst . head . maximaBy (comparing snd) . map (\x -> (x, score $ view x v)) $ xward

@@ -15,6 +15,7 @@ data SimulationOptions = SimulationOptions {
     initialScore       :: Int
 } deriving (Show)
 
+defaultOptions :: SimulationOptions
 defaultOptions = SimulationOptions {
     raceTrackLength    = 54,
     raceTrackWidth     = 15,

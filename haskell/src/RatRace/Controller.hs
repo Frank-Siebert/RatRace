@@ -9,10 +9,8 @@ import Control.Parallel.Strategies
 import Data.Graph.AStar (aStar)
 import Data.List (transpose)
 import Data.Maybe (catMaybes)
-import Data.Maybe (fromJust) -- debug
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList,delete)
-import Debug.Trace
 import System.Environment (getArgs)
 import System.Random (newStdGen, StdGen)
 
@@ -131,6 +129,7 @@ visualizeTrack config g = let
         paths = map (fmap length . findGoalCell) $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         startPos = reverse $ raceTrack : (iterateMaybe _up2 $ raceTrack)
         line x = x : (iterateMaybe _right2 $ x)
+        showCell :: Int -> FullCell -> Char
         showCell 0 c = case cellType c of
                        Wall                      -> 'W'
                        _ | nextCell c == Nothing -> 'o'
@@ -162,12 +161,12 @@ scoreTrack config track player = replicateM (initialRatCount config) randomGenom
                           trackTurn (gameTurns config) (initialScore config)
     where
         createSpecimen :: Genome -> Rand Specimen
-        createSpecimen genome = Specimen genome 0 0 (player genome) <$> drawFromList startingCells
+        createSpecimen gen = Specimen gen 0 0 (player gen) <$> drawFromList startingCells
         flipChance = (genomeFlipChance config)
         startingCells = map _here2 $ admissibleStartingCells (maxAge config) track
         trackTurn :: Int -> Int -> [Specimen] -> Rand Int
         trackTurn _           (-1)    _ = return (-1) -- cannot happen, but makes score strict
-        trackTurn 0          score rats = return score
+        trackTurn 0          score    _ = return score
         trackTurn _          score   [] = return score
         trackTurn _          score  [_] = return score
         trackTurn roundsLeft score rats = do

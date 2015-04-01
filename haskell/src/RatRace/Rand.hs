@@ -41,12 +41,12 @@ mixGenome changeChance mother father =
                then (mother,father)
                else (father,mother))
       where
-         mix ([],recessive) = return recessive
          mix (d:ominant,_:recessive) = (d:) <$>
                  do x <- getRandom
                     mix (if (x < changeChance)
                            then (recessive,ominant)
                            else (ominant,recessive))
+         mix (_,_) = return []
 
 mutateGenome :: Double -> Genome -> Rand Genome
 mutateGenome flipChance = mapM (\x ->
@@ -78,7 +78,7 @@ generateCells = do te1 <- genCell Teleporter 4
                    shuffle $ [Wall,Wall,te1,te2,invertCell te1, invertCell te2, tr1,tr2]++replicate 8 emptyCell where
            genCell ctor r = untilM (/=ctor 0 0) $ liftA2 ctor (getRandomR (-r,r)) (getRandomR (-r,r))
            invertCell (Teleporter a b) = Teleporter (-a) (-b)
-           invertCell c = error "invertCell on a non-Teleporter"
+           invertCell _ = error "invertCell on a non-Teleporter"
 
 shuffle :: [a] -> Rand [a]
 shuffle xs = go (length xs) xs where
