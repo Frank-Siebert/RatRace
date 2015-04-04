@@ -12,7 +12,8 @@ data SimulationOptions = SimulationOptions {
     genomeFlipChance   :: Double,
     maxAge             :: Int,
     gameTurns          :: Int,
-    initialScore       :: Int
+    initialScore       :: Int,
+    randSeed           :: Maybe Int
 } deriving (Show)
 
 defaultOptions :: SimulationOptions
@@ -26,7 +27,8 @@ defaultOptions = SimulationOptions {
     genomeFlipChance   = 0.01,
     maxAge             = 100,
     gameTurns          = 10000,
-    initialScore       = 1
+    initialScore       = 1,
+    randSeed           = Nothing
 }
 
 options :: [OptDescr (SimulationOptions -> SimulationOptions)]
@@ -45,7 +47,10 @@ options =
         ("mutation crossover (default: "++show (genomeChangeChance defaultOptions)++")")
     , Option [] ["maxage"]
         (ReqArg (\x opts -> opts { maxAge = read x }) "n")
-        ("maximum age (default: "++show (maxAge defaultOptions)++")") 
+        ("maximum age (default: "++show (maxAge defaultOptions)++")")
+    , Option [] ["seed"]
+        (ReqArg (\x opts -> opts { randSeed = Just . read $ x }) "n")
+        ("random seed")
     ]
 
 compilerOpts :: [String] -> SimulationOptions

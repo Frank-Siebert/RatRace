@@ -12,7 +12,7 @@ import Data.Maybe (catMaybes)
 import Data.Ord (comparing)
 import qualified Data.Set as Set (Set,fromList,delete)
 import System.Environment (getArgs)
-import System.Random (newStdGen, StdGen)
+import System.Random (newStdGen, StdGen, mkStdGen)
 
 import RatRace.Options
 import RatRace.Rand
@@ -107,7 +107,7 @@ runContest ps =
      let config :: SimulationOptions
          config = compilerOpts argv
      putStrLn $ "With options " ++ show config
-     gs <- take (rounds config) . randomGens <$> newStdGen
+     gs <- take (rounds config) . randomGens <$> maybe newStdGen (return . mkStdGen) (randSeed config)
      forM_ gs (visualizeTrack config)
      let results :: [[Int]]
          results = parMap rdeepseq (runGame config ps) gs
