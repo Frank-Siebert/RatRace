@@ -41,6 +41,7 @@ mixGenome changeChance mother father =
                then (mother,father)
                else (father,mother))
       where
+         mix (x@[d],_) = return x
          mix (d:ominant,_:recessive) = (d:) <$>
                  do x <- getRandom
                     mix (if (x < changeChance)
