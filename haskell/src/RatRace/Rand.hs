@@ -38,12 +38,10 @@ getStdGen = state split
 mixGenome :: Double -> Genome -> Genome -> Rand Genome
 mixGenome changeChance mother father =
       do coin <- getRandom
-         flips <- map (<=changeChance) <$> replicateM 99 getRandom
-         let idxs :: [Bool]
-             idxs = scanl (/=) coin flips
-             d = V.fromList idxs
+         flips <- V.map (<=changeChance) <$> V.replicateM 99 getRandom
+         let idxs = V.scanl' (/=) coin flips
              if' c a b = if c then a else b
-         return $ V.zipWith3 if' d mother father
+         return $ V.zipWith3 if' idxs mother father
 
 mutateGenome :: Double -> Genome -> Rand Genome
 mutateGenome flipChance = V.mapM (\x ->
