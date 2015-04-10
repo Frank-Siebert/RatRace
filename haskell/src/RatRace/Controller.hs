@@ -6,6 +6,7 @@ import Control.Comonad
 import Control.Monad
 import Control.Monad.Trans (lift,liftIO)
 import Control.Parallel.Strategies
+import Data.Bits (testBit)
 import Data.Graph.AStar (aStar)
 import Data.List (transpose)
 import Data.Maybe (catMaybes)
@@ -146,12 +147,13 @@ visualizeTrack config g = let
             Trap       _ _ -> 'X'
             Wall           -> 'W'
         showLine mode x = putStrLn . map (showCell mode . _here2)  . line $ x
+        verbose = testBit (verbosity config)
     in do
-        putStrLn $ "Track " ++ show g
-        putStrLn $ "Paths " ++ show paths
-        forM_ startPos (showLine 0)
-        forM_ startPos (showLine 1)
-        forM_ startPos (showLine 2)
+        when (verbose 1) $ putStrLn $ "Track " ++ show g
+        when (verbose 2) $ putStrLn $ "Paths " ++ show paths
+        when (verbose 3) $ forM_ startPos (showLine 0)
+        when (verbose 4) $ forM_ startPos (showLine 1)
+        when (verbose 5) $ forM_ startPos (showLine 2)
 
 data Specimen = Specimen { genome :: !Genome, completedRuns :: {-# UNPACK #-} !Int, age :: {-# UNPACK #-} !Int, run :: !Run, ratCell :: FullCell } --
 

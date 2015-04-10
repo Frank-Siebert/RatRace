@@ -13,6 +13,7 @@ data SimulationOptions = SimulationOptions {
     maxAge             :: Int,
     gameTurns          :: Int,
     initialScore       :: Int,
+    verbosity          :: Int,
     randSeed           :: Maybe Int
 } deriving (Show)
 
@@ -28,6 +29,7 @@ defaultOptions = SimulationOptions {
     maxAge             = 100,
     gameTurns          = 10000,
     initialScore       = 1,
+    verbosity          = 0,
     randSeed           = Nothing
 }
 
@@ -48,6 +50,9 @@ options =
     , Option [] ["maxage"]
         (ReqArg (\x opts -> opts { maxAge = read x }) "n")
         ("maximum age (default: "++show (maxAge defaultOptions)++")")
+    , Option ['v'] ["verbose"]
+        (ReqArg (\x opts -> opts { verbosity = read x }) "n")
+        ("verbosity (bit-based) (default: "++show (verbosity defaultOptions)++")")
     , Option [] ["seed"]
         (ReqArg (\x opts -> opts { randSeed = Just . read $ x }) "n")
         ("random seed")
