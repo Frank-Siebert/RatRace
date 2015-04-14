@@ -33,6 +33,16 @@ data FullCell = FullCell {
 moveFocus :: Offset -> U2Graph a -> Maybe (U2Graph a)
 moveFocus (x,y) = iter x _left2 _right2 >=> iter y _down2 _up2
 
+makeGoalSafe :: [Cell] -> (Offset,Color) -> (Offset,Color)
+makeGoalSafe cards =
+    let isSafe c = c == emptyCell
+        empties8 = map snd $ filter (isSafe . fst) ix
+        empties = empties8 ++ empties8
+        ix = zip cards [0..15]
+     in \z@(p@(x,y),col) ->
+            if x <= 50 then z
+                      else (p,empties !! col)
+
 buildFullCell :: [Cell] -> U2 (Offset,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where
     b this u = FullCell {
@@ -99,8 +109,11 @@ isGoal :: FullCell -> Bool
 isGoal = (>=49) . fst . position
 
 createRaceTrack :: Int -> Int -> Rand (U2Graph FullCell)
-createRaceTrack l w = buildFullCell <$> generateCells <*> generateRaceTrack l w
---createRaceTrack = buildFullCell <$> pure (replicate 16 (Teleporter 0 0)) <*> generateRaceTrack
+--createRaceTrack l w = buildFullCell <$> generateCells <*> generateRaceTrack l w
+createRaceTrack l w = do rt <- generateRaceTrack l w
+                         cards <- generateCells
+                         let rt' = fmap (makeGoalSafe cards) rt
+                         return $ buildFullCell cards rt'
 
 runContest :: [Player] -> IO ()
 runContest ps =
