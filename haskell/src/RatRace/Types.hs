@@ -1,9 +1,12 @@
-{-# Language DeriveFunctor #-}
+{-# Language DeriveFunctor, DeriveFoldable #-}
 module RatRace.Types where
 
+import Control.Applicative ((<*>))
 import Control.Comonad
 import Control.Monad ((>=>))
 import qualified Data.Vector.Unboxed as V
+import Data.Foldable
+import Data.Traversable (Traversable,traverse,sequenceA)
 import Data.Maybe (catMaybes)
 import System.Random (StdGen)
 
@@ -25,7 +28,10 @@ type Run = (StdGen -> Vision -> Move)
 -- ^ with a definition like TODO the repeated pre-processing can be saved via partial application
 
 -- | A simple zipper
-data U a = U [a] a [a] deriving (Show,Eq,Functor)
+data U a = U [a] a [a] deriving (Show,Eq,Functor,Foldable)
+
+instance Traversable U where
+   traverse f (U ls x rs) = U <$> (traverse f ls) <*> f x <*> traverse f rs
 
 -- | moves the focus of the zipper one to the right, or Nothing at end of tape
 rightU :: U a -> Maybe (U a)
@@ -56,7 +62,10 @@ instance Comonad U where
     duplicate z = U (leftUs z) z (rightUs z)
 
 -- | A 2-Dimensional Zipper
-newtype U2 a = U2 (U (U a)) deriving (Show,Eq,Functor)
+newtype U2 a = U2 (U (U a)) deriving (Show,Eq,Functor,Foldable)
+
+instance Traversable U2 where
+    traverse f (U2 u) = U2 <$> sequenceA (traverse f <$> u)
 
 -- | moves the 2-dimensional zipper to the right, left up or down respectively
 rightU2, leftU2, upU2, downU2 :: U2 a -> Maybe (U2 a)
@@ -71,6 +80,7 @@ instance Comonad U2 where
     duplicate (U2 u) =  fmap U2 $ U2 $ roll $ roll u where
         roll a = U (iterateMaybe (fmap' leftU) a) a (iterateMaybe (fmap' rightU) a)
 
+--looks a lot like traverse, but catMaybes? It is not!
 fmap' :: (a -> Maybe b) -> U a -> Maybe (U b)
 fmap' f (U ls x rs) =
    case f x of
